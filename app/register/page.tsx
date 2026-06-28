@@ -38,7 +38,7 @@ export default function Register() {
       password,
       options: {
         data: { nom, metier },
-        emailRedirectTo: 'https://fairedesdevis.fr/login'
+        emailRedirectTo: 'https://fairedesdevis.fr/auth/callback'
       }
     })
     if (error) {
