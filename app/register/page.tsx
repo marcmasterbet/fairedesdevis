@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { useRouter } from 'next/navigation'
 
 export default function Register() {
   const [email, setEmail] = useState('')
@@ -10,8 +9,8 @@ export default function Register() {
   const [metier, setMetier] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const router = useRouter()
 
   const getPasswordStrength = (pwd: string) => {
     if (pwd.length === 0) return { label: '', color: '' }
@@ -37,15 +36,42 @@ export default function Register() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { nom, metier } }
+      options: {
+        data: { nom, metier },
+        emailRedirectTo: 'https://fairedesdevis.fr/login'
+      }
     })
     if (error) {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      setSuccess(true)
+      setLoading(false)
     }
   }
+
+  if (success) return (
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="bg-white rounded-2xl shadow p-8 w-full max-w-md text-center">
+        <div className="text-5xl mb-4">📬</div>
+        <a href="/" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
+        <h2 className="text-2xl font-bold text-gray-900 mt-4 mb-2">Vérifiez vos emails !</h2>
+        <p className="text-gray-500 text-sm mb-4">
+          Un email de confirmation a été envoyé à<br/>
+          <strong className="text-gray-900">{email}</strong>
+        </p>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 mb-6">
+          <p className="text-yellow-700 text-sm">
+            📁 Si vous ne trouvez pas l'email, vérifiez vos <strong>spams</strong> ou courriers indésirables.
+          </p>
+        </div>
+        <p className="text-gray-400 text-sm mb-4">Une fois confirmé, cliquez sur le lien dans l'email pour accéder à votre compte.</p>
+        <a href="/login" className="block bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
+          Aller à la connexion →
+        </a>
+      </div>
+    </main>
+  )
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -67,7 +93,7 @@ export default function Register() {
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
               placeholder="Jean-Pierre Moreau"
               value={nom}
-              onChange={(e) => setNom(e.target.value)}
+              onChange={e => setNom(e.target.value)}
             />
           </div>
           <div>
@@ -76,7 +102,7 @@ export default function Register() {
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
               placeholder="Plombier, électricien, graphiste..."
               value={metier}
-              onChange={(e) => setMetier(e.target.value)}
+              onChange={e => setMetier(e.target.value)}
             />
           </div>
           <div>
@@ -86,7 +112,7 @@ export default function Register() {
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
               placeholder="jean@exemple.fr"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
             />
           </div>
           <div>
@@ -97,7 +123,7 @@ export default function Register() {
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 pr-12"
                 placeholder="Minimum 6 caractères"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
               />
               <button
                 type="button"
@@ -110,7 +136,7 @@ export default function Register() {
             {password.length > 0 && (
               <div className="mt-2">
                 <div className="flex gap-1 mb-1">
-                  {['bg-gray-200', 'bg-gray-200', 'bg-gray-200'].map((_, i) => (
+                  {[0, 1, 2].map(i => (
                     <div key={i} className={`h-1 flex-1 rounded ${
                       strength.label === 'Fort' ? 'bg-green-400' :
                       strength.label === 'Moyen' && i < 2 ? 'bg-yellow-400' :
@@ -137,10 +163,7 @@ export default function Register() {
         <p className="text-center text-sm text-gray-500 mt-6">
           Déjà un compte ? <a href="/login" className="text-blue-600 hover:underline">Se connecter</a>
         </p>
-
-        <p className="text-center text-xs text-gray-400 mt-4">
-          🔒 Vos données sont sécurisées et chiffrées
-        </p>
+        <p className="text-center text-xs text-gray-400 mt-4">🔒 Vos données sont sécurisées et chiffrées</p>
       </div>
     </main>
   )
