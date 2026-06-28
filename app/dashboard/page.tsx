@@ -38,7 +38,7 @@ export default function Dashboard() {
       <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
         <span className="text-blue-600 font-bold text-xl">FaireDesDevis</span>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{nom}</span>
+          <span className="text-sm text-gray-500 hidden md:block">{nom}</span>
           <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-red-500">Déconnexion</button>
         </div>
       </header>
@@ -66,21 +66,26 @@ export default function Dashboard() {
         </div>
 
         {/* Actions rapides */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <a href="/dashboard/devis/nouveau" className="bg-blue-600 text-white rounded-xl p-6 hover:bg-blue-700 transition">
             <p className="text-2xl mb-2">✏️</p>
             <p className="font-semibold">Nouveau devis</p>
-            <p className="text-blue-200 text-sm mt-1">Générer en 60 secondes</p>
+            <p className="text-blue-200 text-sm mt-1 hidden md:block">Générer en 60 secondes</p>
           </a>
           <a href="/dashboard/clients" className="bg-white border border-gray-200 rounded-xl p-6 hover:border-blue-300 transition">
             <p className="text-2xl mb-2">👥</p>
             <p className="font-semibold text-gray-900">Mes clients</p>
-            <p className="text-gray-400 text-sm mt-1">Gérer le carnet clients</p>
+            <p className="text-gray-400 text-sm mt-1 hidden md:block">Gérer le carnet clients</p>
           </a>
           <a href="/dashboard/catalogue" className="bg-white border border-gray-200 rounded-xl p-6 hover:border-blue-300 transition">
             <p className="text-2xl mb-2">📦</p>
             <p className="font-semibold text-gray-900">Mon catalogue</p>
-            <p className="text-gray-400 text-sm mt-1">Produits et prestations</p>
+            <p className="text-gray-400 text-sm mt-1 hidden md:block">Produits et prestations</p>
+          </a>
+          <a href="/dashboard/profil" className="bg-white border border-gray-200 rounded-xl p-6 hover:border-blue-300 transition">
+            <p className="text-2xl mb-2">⚙️</p>
+            <p className="font-semibold text-gray-900">Mon profil</p>
+            <p className="text-gray-400 text-sm mt-1 hidden md:block">Taux horaire, TVA, SIRET</p>
           </a>
         </div>
 
@@ -97,6 +102,30 @@ export default function Dashboard() {
               Créer mon premier devis →
             </a>
           </div>
+        </div>
+
+        {/* Navigation mobile */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden flex justify-around py-3 px-4">
+          <a href="/dashboard" className="flex flex-col items-center gap-1 text-blue-600">
+            <span className="text-xl">🏠</span>
+            <span className="text-xs">Accueil</span>
+          </a>
+          <a href="/dashboard/devis/nouveau" className="flex flex-col items-center gap-1 text-gray-400">
+            <span className="text-xl">✏️</span>
+            <span className="text-xs">Devis</span>
+          </a>
+          <a href="/dashboard/clients" className="flex flex-col items-center gap-1 text-gray-400">
+            <span className="text-xl">👥</span>
+            <span className="text-xs">Clients</span>
+          </a>
+          <a href="/dashboard/catalogue" className="flex flex-col items-center gap-1 text-gray-400">
+            <span className="text-xl">📦</span>
+            <span className="text-xs">Catalogue</span>
+          </a>
+          <a href="/dashboard/profil" className="flex flex-col items-center gap-1 text-gray-400">
+            <span className="text-xl">⚙️</span>
+            <span className="text-xs">Profil</span>
+          </a>
         </div>
       </div>
     </main>
