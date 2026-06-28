@@ -10,9 +10,28 @@ export default function Register() {
   const [metier, setMetier] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
+  const getPasswordStrength = (pwd: string) => {
+    if (pwd.length === 0) return { label: '', color: '' }
+    if (pwd.length < 6) return { label: 'Trop court', color: 'bg-red-400' }
+    if (pwd.length < 8) return { label: 'Faible', color: 'bg-orange-400' }
+    if (!/[A-Z]/.test(pwd) || !/[0-9]/.test(pwd)) return { label: 'Moyen', color: 'bg-yellow-400' }
+    return { label: 'Fort', color: 'bg-green-400' }
+  }
+
+  const strength = getPasswordStrength(password)
+
   const handleRegister = async () => {
+    if (!nom || !metier || !email || !password) {
+      setError('Veuillez remplir tous les champs.')
+      return
+    }
+    if (password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères.')
+      return
+    }
     setLoading(true)
     setError('')
     const { error } = await supabase.auth.signUp({
@@ -35,7 +54,11 @@ export default function Register() {
         <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Créer votre compte</h2>
         <p className="text-gray-500 text-sm mb-6">1 devis gratuit — sans carte bancaire</p>
 
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>
@@ -68,25 +91,55 @@ export default function Register() {
           </div>
           <div>
             <label className="text-sm text-gray-600 mb-1 block">Mot de passe</label>
-            <input
-              type="password"
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-              placeholder="Minimum 6 caractères"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 pr-12"
+                placeholder="Minimum 6 caractères"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg"
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+            {password.length > 0 && (
+              <div className="mt-2">
+                <div className="flex gap-1 mb-1">
+                  {['bg-gray-200', 'bg-gray-200', 'bg-gray-200'].map((_, i) => (
+                    <div key={i} className={`h-1 flex-1 rounded ${
+                      strength.label === 'Fort' ? 'bg-green-400' :
+                      strength.label === 'Moyen' && i < 2 ? 'bg-yellow-400' :
+                      strength.label === 'Faible' && i < 1 ? 'bg-orange-400' :
+                      strength.label === 'Trop court' && i < 1 ? 'bg-red-400' :
+                      'bg-gray-200'
+                    }`} />
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500">{strength.label}</p>
+              </div>
+            )}
           </div>
+
           <button
             onClick={handleRegister}
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
           >
-            {loading ? 'Création...' : 'Créer mon compte gratuitement →'}
+            {loading ? 'Création en cours...' : 'Créer mon compte gratuitement →'}
           </button>
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          Déjà un compte ? <a href="/login" className="text-blue-600">Se connecter</a>
+          Déjà un compte ? <a href="/login" className="text-blue-600 hover:underline">Se connecter</a>
+        </p>
+
+        <p className="text-center text-xs text-gray-400 mt-4">
+          🔒 Vos données sont sécurisées et chiffrées
         </p>
       </div>
     </main>
