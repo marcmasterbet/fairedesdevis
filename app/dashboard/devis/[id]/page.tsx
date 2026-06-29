@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { use } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
@@ -21,7 +22,8 @@ interface Devis {
   created_at: string
 }
 
-export default function DevisPage({ params }: { params: { id: string } }) {
+export default function DevisPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const [devis, setDevis] = useState<Devis | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -30,12 +32,23 @@ export default function DevisPage({ params }: { params: { id: string } }) {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      const { data } = await supabase.from('devis').select('*').eq('id', params.id).single()
+      const { data } = await supabase
+        .from('devis')
+        .select('*')
+        .eq('id', id)
+        .single()
       setDevis(data)
       setLoading(false)
     }
     init()
-  }, [params.id, router])
+  }, [id, router])
+
+  const getStatutStyle = (statut: string) => {
+    if (statut === 'accepté') return 'bg-green-100 text-green-700'
+    if (statut === 'refusé') return 'bg-red-100 text-red-700'
+    if (statut === 'envoyé') return 'bg-blue-100 text-blue-700'
+    return 'bg-gray-100 text-gray-600'
+  }
 
   if (loading) return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -48,13 +61,6 @@ export default function DevisPage({ params }: { params: { id: string } }) {
       <p className="text-gray-400">Devis introuvable</p>
     </main>
   )
-
-  const getStatutStyle = (statut: string) => {
-    if (statut === 'accepté') return 'bg-green-100 text-green-700'
-    if (statut === 'refusé') return 'bg-red-100 text-red-700'
-    if (statut === 'envoyé') return 'bg-blue-100 text-blue-700'
-    return 'bg-gray-100 text-gray-600'
-  }
 
   return (
     <main className="min-h-screen bg-gray-50">
