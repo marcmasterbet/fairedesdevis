@@ -8,7 +8,11 @@ interface Client {
   nom: string
   email: string
   telephone: string
+  telephone_fixe: string
   adresse: string
+  code_postal: string
+  ville: string
+  pays: string
   siret: string
 }
 
@@ -92,57 +96,118 @@ export default function NouveauDevis() {
   const totalHT = lignes.reduce((s, l) => s + l.total_ht, 0)
   const totalTVA = totalHT * tva / 100
   const totalTTC = totalHT + totalTVA
+  const acompte = 30
 
   const categories = [...new Set(produits.map(p => p.categorie || 'Autre'))]
 
   const handleGenerer = async () => {
     if (!clientId) { alert('Sélectionnez un client'); return }
     if (lignes.length === 0) { alert('Sélectionnez au moins un produit'); return }
-    if (!description) { alert('Décrivez le chantier'); return }
+    if (!description) { alert('Décrivez le chantier ou la mission'); return }
     setGenerating(true)
 
     const { data: { user } } = await supabase.auth.getUser()
     const client = clients.find(c => c.id === clientId)
     const numero = `DEV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
+    const acompteVal = user?.user_metadata?.['acompte'] || String(acompte)
+    const acompteMontant = (totalTTC * parseInt(acompteVal) / 100).toFixed(2)
+    const soldeMontant = (totalTTC * (1 - parseInt(acompteVal) / 100)).toFixed(2)
 
-    const prompt = `Tu es un expert en rédaction de devis professionnels français.
-Génère un devis complet et professionnel avec ces informations :
+    const prompt = `Tu es un expert en création de documents commerciaux professionnels français.
 
-PRESTATAIRE :
-- Nom : ${user?.user_metadata?.['nom']}
-- Métier : ${user?.user_metadata?.['metier']}
-- SIRET : ${user?.user_metadata?.['siret'] || 'Non renseigné'}
-- Adresse : ${user?.user_metadata?.['adresse'] || 'Non renseignée'}
-- Téléphone : ${user?.user_metadata?.['telephone'] || 'Non renseigné'}
-- Mentions légales : ${user?.user_metadata?.['mentions_legales'] || ''}
+Génère un devis en HTML avec CSS inline. Le rendu doit être MAGNIFIQUE, professionnel et prêt à envoyer à un client.
 
-CLIENT :
-- Nom : ${client?.nom}
-- Email : ${client?.email}
-- Adresse : ${client?.adresse || 'Non renseignée'}
-- SIRET : ${client?.siret || 'Particulier'}
+RÈGLES ABSOLUES :
+- HTML pur avec CSS inline uniquement
+- Pas de markdown, pas de #, pas de **, pas de backticks, pas de commentaires
+- Pas de balises html, head, body, style
+- Couleur principale : #2563eb (bleu)
+- Police : Arial, sans-serif
+- Fond blanc pur
+- Aspect document A4 professionnel
+
+DONNÉES PRESTATAIRE :
+Nom : ${user?.user_metadata?.['nom'] || ''}
+Métier : ${user?.user_metadata?.['metier'] || ''}
+SIRET : ${user?.user_metadata?.['siret'] || ''}
+Adresse : ${user?.user_metadata?.['adresse'] || ''}
+Téléphone : ${user?.user_metadata?.['telephone'] || ''}
+Email : ${user?.email || ''}
+Mentions légales : ${user?.user_metadata?.['mentions_legales'] || ''}
+
+DONNÉES CLIENT :
+Nom : ${client?.nom || ''}
+Email : ${client?.email || ''}
+Téléphone mobile : ${client?.telephone || ''}
+Téléphone fixe : ${client?.telephone_fixe || ''}
+Adresse : ${client?.adresse || ''} ${client?.code_postal || ''} ${client?.ville || ''} ${client?.pays || ''}
+SIRET : ${client?.siret || 'Particulier'}
 
 DEVIS N° ${numero}
 Date : ${new Date().toLocaleDateString('fr-FR')}
 Validité : ${user?.user_metadata?.['delai_validite'] || 30} jours
+Description : ${description}
+Date de début : ${dateDebut || 'À convenir'}
+Délai d'exécution : ${delai || 'À convenir'}
 
-DESCRIPTION DU CHANTIER : ${description}
-DATE DE DÉBUT : ${dateDebut || 'À définir'}
-DÉLAI : ${delai || 'À définir'}
-
-LIGNES DU DEVIS :
-${lignes.map(l => `- ${l.nom} (réf: ${l.reference || 'N/A'}) : ${l.quantite} ${l.unite} × ${l.prix_ht}€ HT = ${l.total_ht}€ HT`).join('\n')}
+PRESTATIONS :
+${lignes.map(l => `${l.nom}|${l.reference || '-'}|${l.quantite}|${l.unite}|${l.prix_ht.toFixed(2)}€|${l.total_ht.toFixed(2)}€`).join('\n')}
 
 MONTANTS :
-- Total HT : ${totalHT.toFixed(2)}€
-- TVA ${tva}% : ${totalTVA.toFixed(2)}€
-- Total TTC : ${totalTTC.toFixed(2)}€
-- Acompte ${user?.user_metadata?.['acompte'] || 30}% : ${(totalTTC * (parseInt(user?.user_metadata?.['acompte'] || '30')) / 100).toFixed(2)}€
+Total HT : ${totalHT.toFixed(2)}€
+TVA ${tva}% : ${totalTVA.toFixed(2)}€
+Total TTC : ${totalTTC.toFixed(2)}€
+Acompte ${acompteVal}% à la commande : ${acompteMontant}€
+Solde à réception des travaux : ${soldeMontant}€
 
-${penalite ? `PÉNALITÉ DE RETARD : ${penaliteTexte}` : ''}
-${annulation ? `CONDITIONS D'ANNULATION : ${annulationTexte}` : ''}
+${penalite && penaliteTexte ? `PÉNALITÉ DE RETARD : ${penaliteTexte}` : ''}
+${annulation && annulationTexte ? `CONDITIONS D'ANNULATION : ${annulationTexte}` : ''}
 
-Rédige le devis de façon professionnelle et complète en français. Inclus toutes les sections habituelles d'un devis professionnel français. Utilise les informations fournies exactement.`
+GÉNÈRE CE HTML EXACTEMENT DANS CET ORDRE :
+
+1. EN-TÊTE (display:flex, justify-content:space-between, align-items:flex-start, margin-bottom:32px)
+   GAUCHE : nom prestataire (font-size:22px, font-weight:bold, color:#1e293b), métier (color:#2563eb, font-size:14px, margin:4px 0), puis adresse téléphone email en petit (font-size:12px, color:#64748b, line-height:1.6)
+   DROITE : "DEVIS" (font-size:40px, font-weight:bold, color:#2563eb, text-align:right), numéro (font-size:14px, color:#64748b, text-align:right), date et validité (font-size:12px, color:#94a3b8, text-align:right)
+
+2. LIGNE BLEUE : div style="height:3px;background:#2563eb;margin:0 0 28px 0"
+
+3. SECTION CLIENT : div style="background:#f8fafc;border-left:4px solid #2563eb;padding:16px 20px;margin-bottom:28px;border-radius:0 8px 8px 0"
+   Label "DEVIS ÉTABLI POUR" (font-size:10px, color:#94a3b8, letter-spacing:1px, text-transform:uppercase, margin-bottom:8px)
+   Nom client (font-size:16px, font-weight:bold, color:#1e293b)
+   Adresse, email, téléphone (font-size:13px, color:#64748b, line-height:1.8)
+
+4. DESCRIPTION : si présente, div style="margin-bottom:24px;padding:12px 16px;background:#fefce8;border-radius:8px;border:1px solid #fef08a"
+   Label "DESCRIPTION DES TRAVAUX" en petit gris puis texte
+
+5. TABLEAU PRESTATIONS : table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px"
+   HEADER tr style="background:#2563eb;color:white"
+   th style="padding:10px 12px;text-align:left" : Désignation, Référence, Qté, Unité, Prix unit. HT, Total HT
+   LIGNES alternées : tr style="background:white" et tr style="background:#f8fafc"
+   td style="padding:10px 12px;border-bottom:1px solid #e2e8f0"
+   Dernière colonne : text-align:right;font-weight:500
+
+6. RÉCAPITULATIF : div style="margin-left:auto;width:300px;margin-bottom:32px"
+   Ligne HT : div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:14px"
+   Ligne TVA : même style
+   Ligne TOTAL TTC : div style="display:flex;justify-content:space-between;background:#2563eb;color:white;padding:14px 16px;border-radius:8px;font-size:18px;font-weight:bold;margin-top:8px"
+
+7. CONDITIONS PAIEMENT : div style="margin-bottom:24px;padding:16px;background:#f8fafc;border-radius:8px;font-size:13px;color:#475569"
+   Titre "CONDITIONS DE RÈGLEMENT" en petit caps bleu
+   Acompte, solde, mode de règlement (virement / chèque)
+   ${penalite && penaliteTexte ? `Pénalité de retard : ${penaliteTexte}` : ''}
+   ${annulation && annulationTexte ? `Annulation : ${annulationTexte}` : ''}
+
+8. ZONE SIGNATURE : div style="display:flex;justify-content:space-between;margin-top:40px;gap:40px"
+   GAUCHE div style="flex:1;border-top:2px solid #e2e8f0;padding-top:12px"
+   "Bon pour accord — Date : ___/___/______" (font-size:12px, color:#94a3b8)
+   "Signature du client précédée de la mention manuscrite Bon pour accord" (font-size:11px, color:#cbd5e1, margin-top:48px)
+   DROITE div style="flex:1;border-top:2px solid #e2e8f0;padding-top:12px"
+   "Signature du prestataire" puis nom prestataire
+
+9. PIED DE PAGE : div style="margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;line-height:1.8"
+   SIRET, mentions légales, "Devis non contractuel avant acceptation"
+
+Génère UNIQUEMENT le HTML. Rien avant, rien après.`
 
     try {
       const response = await fetch('/api/generer-devis', {
@@ -159,7 +224,7 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
         client_id: clientId,
         client_nom: client?.nom,
         client_email: client?.email,
-        client_adresse: client?.adresse,
+        client_adresse: `${client?.adresse || ''} ${client?.code_postal || ''} ${client?.ville || ''}`.trim(),
         client_siret: client?.siret,
         description,
         date_debut: dateDebut,
@@ -200,10 +265,10 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
         <a href="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">← Dashboard</a>
       </header>
 
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8 pb-24">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Nouveau devis</h1>
 
-        {/* Client */}
+        {/* 1. Client */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h2 className="font-semibold text-gray-900 mb-4">1. Client</h2>
           <select
@@ -221,7 +286,7 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
           )}
         </div>
 
-        {/* Description */}
+        {/* 2. Description */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h2 className="font-semibold text-gray-900 mb-4">2. Description du chantier</h2>
           <textarea
@@ -236,13 +301,13 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
               <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Délai</label>
+              <label className="text-xs text-gray-500 mb-1 block">Délai d'exécution</label>
               <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="ex: 2 semaines" value={delai} onChange={e => setDelai(e.target.value)} />
             </div>
           </div>
         </div>
 
-        {/* Produits */}
+        {/* 3. Produits */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h2 className="font-semibold text-gray-900 mb-4">3. Produits et prestations</h2>
           {produits.length === 0 ? (
@@ -256,7 +321,11 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
                     {produits.filter(p => (p.categorie || 'Autre') === cat).map(produit => {
                       const ligne = lignes.find(l => l.produit_id === produit.id)
                       return (
-                        <div key={produit.id} onClick={() => toggleProduit(produit)} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${ligne ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        <div
+                          key={produit.id}
+                          onClick={() => toggleProduit(produit)}
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${ligne ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+                        >
                           <input type="checkbox" readOnly checked={!!ligne} className="accent-blue-600" />
                           <div className="flex-1">
                             <p className="text-sm font-medium text-gray-900">{produit.nom}</p>
@@ -282,7 +351,6 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
             </div>
           )}
 
-          {/* Total */}
           {lignes.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-100">
               <div className="flex justify-between text-sm text-gray-500 mb-1"><span>Total HT</span><span>{totalHT.toFixed(2)} €</span></div>
@@ -292,7 +360,7 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
           )}
         </div>
 
-        {/* Conditions */}
+        {/* 4. Conditions */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
           <h2 className="font-semibold text-gray-900 mb-4">4. Conditions particulières</h2>
           <div className="space-y-4">
@@ -302,7 +370,12 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
                 <span className="text-sm text-gray-700">Pénalité de retard</span>
               </label>
               {penalite && (
-                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: 1% du montant par semaine de retard..." value={penaliteTexte} onChange={e => setPenaliteTexte(e.target.value)} />
+                <textarea
+                  className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none"
+                  placeholder="Ex: 1% du montant par semaine de retard..."
+                  value={penaliteTexte}
+                  onChange={e => setPenaliteTexte(e.target.value)}
+                />
               )}
             </div>
             <div>
@@ -311,7 +384,12 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
                 <span className="text-sm text-gray-700">Conditions d'annulation</span>
               </label>
               {annulation && (
-                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: En cas d'annulation, l'acompte reste acquis..." value={annulationTexte} onChange={e => setAnnulationTexte(e.target.value)} />
+                <textarea
+                  className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none"
+                  placeholder="Ex: En cas d'annulation, l'acompte reste acquis..."
+                  value={annulationTexte}
+                  onChange={e => setAnnulationTexte(e.target.value)}
+                />
               )}
             </div>
           </div>
@@ -325,6 +403,30 @@ Rédige le devis de façon professionnelle et complète en français. Inclus tou
         >
           {generating ? '⏳ Génération en cours...' : '✨ Générer mon devis avec l\'IA →'}
         </button>
+      </div>
+
+      {/* Navigation mobile */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden flex justify-around py-3 px-4">
+        <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400">
+          <span className="text-xl">🏠</span>
+          <span className="text-xs">Accueil</span>
+        </a>
+        <a href="/dashboard/devis/nouveau" className="flex flex-col items-center gap-1 text-blue-600">
+          <span className="text-xl">✏️</span>
+          <span className="text-xs">Devis</span>
+        </a>
+        <a href="/dashboard/clients" className="flex flex-col items-center gap-1 text-gray-400">
+          <span className="text-xl">👥</span>
+          <span className="text-xs">Clients</span>
+        </a>
+        <a href="/dashboard/catalogue" className="flex flex-col items-center gap-1 text-gray-400">
+          <span className="text-xl">📦</span>
+          <span className="text-xs">Catalogue</span>
+        </a>
+        <a href="/dashboard/profil" className="flex flex-col items-center gap-1 text-gray-400">
+          <span className="text-xl">⚙️</span>
+          <span className="text-xs">Profil</span>
+        </a>
       </div>
     </main>
   )
