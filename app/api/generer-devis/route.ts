@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
+      max_tokens: 4000,
+      system: 'Tu génères UNIQUEMENT du HTML avec CSS inline. Jamais de markdown. Jamais de #, **, ---, |---|. Uniquement des balises HTML valides avec style inline. Ta réponse commence toujours par <div et finit par </div>.',
       messages: [{ role: 'user', content: prompt }]
     })
   })
