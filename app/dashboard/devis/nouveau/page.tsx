@@ -333,15 +333,29 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
                           </div>
                           <span className="text-sm font-semibold text-gray-900">{produit.prix_ht}€ / {produit.unite}</span>
                           {ligne && (
-                            <input
-                              type="number"
-                              min="1"
-                              value={ligne.quantite}
-                              onClick={e => e.stopPropagation()}
-                              onChange={e => updateQuantite(produit.id, parseInt(e.target.value) || 1)}
-                              className="w-16 border border-blue-300 rounded px-2 py-1 text-sm text-center"
-                            />
-                          )}
+  <input
+    type="number"
+    min="1"
+    inputMode="numeric"
+    value={ligne.quantite === 0 ? '' : ligne.quantite}
+    onClick={e => e.stopPropagation()}
+    onChange={e => {
+      const val = e.target.value
+      if (val === '') {
+        updateQuantite(produit.id, 0)
+      } else {
+        const num = parseInt(val)
+        if (!isNaN(num)) updateQuantite(produit.id, num)
+      }
+    }}
+    onBlur={e => {
+      if (e.target.value === '' || parseInt(e.target.value) < 1) {
+        updateQuantite(produit.id, 1)
+      }
+    }}
+    className="w-16 border border-blue-300 rounded px-2 py-1 text-sm text-center"
+  />
+)}
                         </div>
                       )
                     })}
