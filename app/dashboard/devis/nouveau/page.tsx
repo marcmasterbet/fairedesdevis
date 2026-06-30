@@ -129,7 +129,6 @@ export default function NouveauDevis() {
   const totalHT = lignes.reduce((s, l) => s + l.total_ht, 0)
   const totalTVA = totalHT * tva / 100
   const totalTTC = totalHT + totalTVA
-  const acompte = 30
 
   const resultats = search.length >= 1
     ? produits.filter(p =>
@@ -151,9 +150,10 @@ export default function NouveauDevis() {
     const { data: { user } } = await supabase.auth.getUser()
     const client = clients.find(c => c.id === clientId)
     const numero = `DEV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
-    const acompteVal = user?.user_metadata?.['acompte'] || String(acompte)
+    const acompteVal = user?.user_metadata?.['acompte'] || '30'
     const acompteMontant = (totalTTC * parseInt(acompteVal) / 100).toFixed(2)
     const soldeMontant = (totalTTC * (1 - parseInt(acompteVal) / 100)).toFixed(2)
+    const logoUrl = user?.user_metadata?.['logo_url'] || ''
 
     const prompt = `Tu es un expert en création de documents commerciaux professionnels français.
 
@@ -168,9 +168,9 @@ RÈGLES ABSOLUES :
 - Fond blanc pur
 - RESPONSIVE OBLIGATOIRE : utilise des largeurs en % ou max-width, jamais de largeur fixe en pixels supérieure à 100%
 - Le conteneur principal doit avoir width:100% et box-sizing:border-box
-- Sur le tableau des prestations, enveloppe-le dans un div avec style="overflow-x:auto;width:100%" pour permettre le défilement horizontal sur petit écran sans casser la mise en page
-- Les sections d'en-tête (prestataire/devis) doivent utiliser flex-wrap:wrap pour s'empiler verticalement sur petit écran au lieu de déborder
-- Tailles de police raisonnables : entre 11px et 16px pour le texte courant, jamais plus de 28px même pour les titres
+- Sur le tableau des prestations, enveloppe-le dans un div avec style="overflow-x:auto;width:100%" pour permettre le défilement horizontal sur petit écran
+- Les sections d'en-tête doivent utiliser flex-wrap:wrap pour s'empiler verticalement sur petit écran
+- Tailles de police entre 11px et 16px pour le texte courant
 
 DONNÉES PRESTATAIRE :
 Nom : ${user?.user_metadata?.['nom'] || ''}
@@ -180,6 +180,7 @@ Adresse : ${user?.user_metadata?.['adresse'] || ''}
 Téléphone : ${user?.user_metadata?.['telephone'] || ''}
 Email : ${user?.email || ''}
 Mentions légales : ${user?.user_metadata?.['mentions_legales'] || ''}
+Logo URL : ${logoUrl}
 
 DONNÉES CLIENT :
 Nom : ${client?.nom || ''}
@@ -211,8 +212,10 @@ ${annulation && annulationTexte ? `CONDITIONS D'ANNULATION : ${annulationTexte}`
 
 GÉNÈRE CE HTML EXACTEMENT DANS CET ORDRE :
 
-1. EN-TÊTE : div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:32px"
-   GAUCHE div style="flex:1;min-width:200px" : nom prestataire (font-size:20px, font-weight:bold, color:#1e293b), métier (color:#2563eb, font-size:13px, margin:4px 0), puis adresse téléphone email en petit (font-size:12px, color:#64748b, line-height:1.6, word-break:break-word)
+1. EN-TÊTE : div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:32px;width:100%;box-sizing:border-box"
+   GAUCHE div style="flex:1;min-width:200px" :
+   ${logoUrl ? `IMPORTANT : affiche le logo en premier avec cette balise exacte : <img src="${logoUrl}" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:8px;display:block" alt="Logo" />` : ''}
+   puis nom prestataire (font-size:20px, font-weight:bold, color:#1e293b), métier (color:#2563eb, font-size:13px, margin:4px 0), puis adresse téléphone email en petit (font-size:12px, color:#64748b, line-height:1.6, word-break:break-word)
    DROITE div style="flex:1;min-width:160px;text-align:right" : "DEVIS" (font-size:28px, font-weight:bold, color:#2563eb), numéro (font-size:13px, color:#64748b), date et validité (font-size:11px, color:#94a3b8)
 
 2. LIGNE BLEUE : div style="height:3px;background:#2563eb;margin:0 0 24px 0;width:100%"
@@ -222,7 +225,7 @@ GÉNÈRE CE HTML EXACTEMENT DANS CET ORDRE :
    Nom client (font-size:15px, font-weight:bold, color:#1e293b)
    Adresse, email, téléphone (font-size:12px, color:#64748b, line-height:1.8, word-break:break-word)
 
-4. DESCRIPTION : si présente, div style="margin-bottom:20px;padding:12px 14px;background:#fefce8;border-radius:8px;border:1px solid #fef08a;font-size:13px"
+4. DESCRIPTION : si présente, div style="margin-bottom:20px;padding:12px 14px;background:#fefce8;border-radius:8px;border:1px solid #fef08a;font-size:13px;width:100%;box-sizing:border-box"
 
 5. TABLEAU PRESTATIONS : enveloppé dans div style="overflow-x:auto;width:100%;margin-bottom:20px"
    table style="width:100%;min-width:480px;border-collapse:collapse;font-size:12px"
@@ -233,16 +236,16 @@ GÉNÈRE CE HTML EXACTEMENT DANS CET ORDRE :
    Dernière colonne : text-align:right;font-weight:500;white-space:nowrap
 
 6. RÉCAPITULATIF : div style="margin-left:auto;width:100%;max-width:280px;margin-bottom:28px"
-   Ligne HT et TVA : div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:13px"
-   Ligne TOTAL TTC : div style="display:flex;justify-content:space-between;background:#2563eb;color:white;padding:12px 14px;border-radius:8px;font-size:16px;font-weight:bold;margin-top:6px"
+   Ligne HT et TVA : display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:13px
+   Ligne TOTAL TTC : display:flex;justify-content:space-between;background:#2563eb;color:white;padding:12px 14px;border-radius:8px;font-size:16px;font-weight:bold;margin-top:6px
 
 7. CONDITIONS PAIEMENT : div style="margin-bottom:20px;padding:14px;background:#f8fafc;border-radius:8px;font-size:12px;color:#475569;width:100%;box-sizing:border-box"
+   Acompte, solde, mode de règlement
    ${penalite && penaliteTexte ? `Pénalité de retard : ${penaliteTexte}` : ''}
    ${annulation && annulationTexte ? `Annulation : ${annulationTexte}` : ''}
 
 8. ZONE SIGNATURE : div style="display:flex;flex-wrap:wrap;justify-content:space-between;margin-top:32px;gap:24px"
-   GAUCHE div style="flex:1;min-width:200px;border-top:2px solid #e2e8f0;padding-top:10px;font-size:11px"
-   DROITE div style="flex:1;min-width:200px;border-top:2px solid #e2e8f0;padding-top:10px;font-size:11px"
+   GAUCHE et DROITE : div style="flex:1;min-width:200px;border-top:2px solid #e2e8f0;padding-top:10px;font-size:11px"
 
 9. PIED DE PAGE : div style="margin-top:32px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center;line-height:1.8;word-break:break-word"
 
@@ -348,13 +351,13 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
               <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Délai d'exécution</label>
+              <label className="text-xs text-gray-500 mb-1 block">Délai d&apos;exécution</label>
               <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="ex: 2 semaines" value={delai} onChange={e => setDelai(e.target.value)} />
             </div>
           </div>
         </div>
 
-        {/* 3. Produits — recherche type caisse */}
+        {/* 3. Produits */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h2 className="font-semibold text-gray-900 mb-4">3. Produits et prestations</h2>
 
@@ -364,7 +367,7 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
             <div className="relative mb-4">
               <input
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-                placeholder="🔍 Rechercher un produit (nom, référence, catégorie)..."
+                placeholder="🔍 Rechercher un produit..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -387,13 +390,12 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
               )}
               {search.length >= 1 && resultats.length === 0 && (
                 <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm text-gray-400">
-                  Aucun produit trouvé pour &quot;{search}&quot;
+                  Aucun produit trouvé
                 </div>
               )}
             </div>
           )}
 
-          {/* Tableau des produits ajoutés */}
           {lignesProduits.length > 0 && (
             <div className="space-y-2 mb-4">
               {lignesProduits.map(ligne => (
@@ -416,9 +418,7 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
                       }
                     }}
                     onBlur={e => {
-                      if (e.target.value === '' || parseInt(e.target.value) < 1) {
-                        updateQuantite(ligne.produit_id, 1)
-                      }
+                      if (e.target.value === '' || parseInt(e.target.value) < 1) updateQuantite(ligne.produit_id, 1)
                     }}
                     className="w-16 border border-blue-300 rounded px-2 py-1 text-sm text-center bg-white"
                   />
@@ -447,20 +447,17 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
                   type="text"
                   inputMode="decimal"
                   className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="Nombre d'heures, ex: 1.5 pour 1h30"
+                  placeholder="Nombre d'heures ex: 1.5 pour 1h30"
                   value={heuresMainOeuvre}
                   onChange={e => setHeuresMainOeuvre(e.target.value)}
                 />
-                <button
-                  onClick={ajouterMainOeuvre}
-                  className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap"
-                >
+                <button onClick={ajouterMainOeuvre} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap">
                   + Ajouter
                 </button>
               </div>
             )}
             {!tauxHoraire && (
-              <p className="text-xs text-amber-600 mt-2">⚠️ Renseignez votre taux horaire dans <a href="/dashboard/profil" className="underline">votre profil</a> pour utiliser cette fonction</p>
+              <p className="text-xs text-amber-600 mt-2">⚠️ Renseignez votre taux horaire dans <a href="/dashboard/profil" className="underline">votre profil</a></p>
             )}
           </div>
 
@@ -483,12 +480,7 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
                 <span className="text-sm text-gray-700">Pénalité de retard</span>
               </label>
               {penalite && (
-                <textarea
-                  className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none"
-                  placeholder="Ex: 1% du montant par semaine de retard..."
-                  value={penaliteTexte}
-                  onChange={e => setPenaliteTexte(e.target.value)}
-                />
+                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: 1% du montant par semaine de retard..." value={penaliteTexte} onChange={e => setPenaliteTexte(e.target.value)} />
               )}
             </div>
             <div>
@@ -497,18 +489,12 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
                 <span className="text-sm text-gray-700">Conditions d&apos;annulation</span>
               </label>
               {annulation && (
-                <textarea
-                  className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none"
-                  placeholder="Ex: En cas d'annulation, l'acompte reste acquis..."
-                  value={annulationTexte}
-                  onChange={e => setAnnulationTexte(e.target.value)}
-                />
+                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: En cas d'annulation, l'acompte reste acquis..." value={annulationTexte} onChange={e => setAnnulationTexte(e.target.value)} />
               )}
             </div>
           </div>
         </div>
 
-        {/* Bouton générer */}
         <button
           onClick={handleGenerer}
           disabled={generating}
@@ -518,28 +504,12 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
         </button>
       </div>
 
-      {/* Navigation mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden flex justify-around py-3 px-4">
-        <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400">
-          <span className="text-xl">🏠</span>
-          <span className="text-xs">Accueil</span>
-        </a>
-        <a href="/dashboard/devis/nouveau" className="flex flex-col items-center gap-1 text-blue-600">
-          <span className="text-xl">✏️</span>
-          <span className="text-xs">Devis</span>
-        </a>
-        <a href="/dashboard/clients" className="flex flex-col items-center gap-1 text-gray-400">
-          <span className="text-xl">👥</span>
-          <span className="text-xs">Clients</span>
-        </a>
-        <a href="/dashboard/catalogue" className="flex flex-col items-center gap-1 text-gray-400">
-          <span className="text-xl">📦</span>
-          <span className="text-xs">Catalogue</span>
-        </a>
-        <a href="/dashboard/profil" className="flex flex-col items-center gap-1 text-gray-400">
-          <span className="text-xl">⚙️</span>
-          <span className="text-xs">Profil</span>
-        </a>
+        <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">🏠</span><span className="text-xs">Accueil</span></a>
+        <a href="/dashboard/devis/nouveau" className="flex flex-col items-center gap-1 text-blue-600"><span className="text-xl">✏️</span><span className="text-xs">Devis</span></a>
+        <a href="/dashboard/clients" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">👥</span><span className="text-xs">Clients</span></a>
+        <a href="/dashboard/catalogue" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">📦</span><span className="text-xs">Catalogue</span></a>
+        <a href="/dashboard/profil" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">⚙️</span><span className="text-xs">Profil</span></a>
       </div>
     </main>
   )
