@@ -23,6 +23,8 @@ export default function Profil() {
     acompte: '30',
     delai_validite: '30',
     mentions_legales: '',
+    iban: '',
+    bic: '',
   })
   const router = useRouter()
 
@@ -44,6 +46,8 @@ export default function Profil() {
         acompte: user.user_metadata?.['acompte'] || '30',
         delai_validite: user.user_metadata?.['delai_validite'] || '30',
         mentions_legales: user.user_metadata?.['mentions_legales'] || '',
+        iban: user.user_metadata?.['iban'] || '',
+        bic: user.user_metadata?.['bic'] || '',
       }))
       const logo = user.user_metadata?.['logo_url'] || ''
       setLogoUrl(logo)
@@ -156,6 +160,61 @@ export default function Profil() {
             </div>
           </div>
         </div>
+
+{/* Coordonnées bancaires */}
+<div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+  <h2 className="font-semibold text-gray-900 mb-4">Coordonnées bancaires</h2>
+  <p className="text-xs text-gray-400 mb-4">Apparaîtront dans la section règlement de vos devis pour faciliter les virements</p>
+  <div className="space-y-4">
+    <div>
+      <label className="text-sm text-gray-600 mb-1 block">IBAN</label>
+      <input
+        className={`w-full border rounded-lg px-4 py-3 text-sm focus:outline-none font-mono ${
+          form.iban.length === 0 ? 'border-gray-200 focus:border-blue-500' :
+          form.iban.replace(/\s/g, '').length >= 14 && form.iban.replace(/\s/g, '').length <= 34 ? 'border-green-400 bg-green-50' :
+          'border-red-400 bg-red-50'
+        }`}
+        value={form.iban}
+        onChange={e => set('iban', e.target.value.toUpperCase())}
+        placeholder="FR76 3000 6000 0112 3456 7890 189"
+      />
+      {form.iban.length > 0 && (
+        <p className={`text-xs mt-1 ${
+          form.iban.replace(/\s/g, '').length >= 14 && form.iban.replace(/\s/g, '').length <= 34
+            ? 'text-green-600' : 'text-red-500'
+        }`}>
+          {form.iban.replace(/\s/g, '').length >= 14 && form.iban.replace(/\s/g, '').length <= 34
+            ? '✓ IBAN valide'
+            : `⚠️ IBAN incorrect — vérifiez le numéro (${form.iban.replace(/\s/g, '').length} caractères)`
+          }
+        </p>
+      )}
+    </div>
+    <div>
+      <label className="text-sm text-gray-600 mb-1 block">BIC / SWIFT</label>
+      <input
+        className={`w-full border rounded-lg px-4 py-3 text-sm focus:outline-none font-mono ${
+          form.bic.length === 0 ? 'border-gray-200 focus:border-blue-500' :
+          form.bic.length >= 8 && form.bic.length <= 11 ? 'border-green-400 bg-green-50' :
+          'border-red-400 bg-red-50'
+        }`}
+        value={form.bic}
+        onChange={e => set('bic', e.target.value.toUpperCase())}
+        placeholder="BNPAFRPP"
+      />
+      {form.bic.length > 0 && (
+        <p className={`text-xs mt-1 ${
+          form.bic.length >= 8 && form.bic.length <= 11 ? 'text-green-600' : 'text-red-500'
+        }`}>
+          {form.bic.length >= 8 && form.bic.length <= 11
+            ? '✓ BIC valide'
+            : '⚠️ BIC incorrect — doit contenir 8 ou 11 caractères'
+          }
+        </p>
+      )}
+    </div>
+  </div>
+</div>
 
         {/* Paramètres devis */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">

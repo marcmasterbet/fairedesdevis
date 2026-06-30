@@ -154,6 +154,8 @@ export default function NouveauDevis() {
     const acompteMontant = (totalTTC * parseInt(acompteVal) / 100).toFixed(2)
     const soldeMontant = (totalTTC * (1 - parseInt(acompteVal) / 100)).toFixed(2)
     const logoUrl = user?.user_metadata?.['logo_url'] || ''
+    const ibanVal = user?.user_metadata?.['iban'] || ''
+    const bicVal = user?.user_metadata?.['bic'] || ''
 
     const prompt = `Tu es un expert en création de documents commerciaux professionnels français.
 
@@ -240,7 +242,12 @@ GÉNÈRE CE HTML EXACTEMENT DANS CET ORDRE :
    Ligne TOTAL TTC : display:flex;justify-content:space-between;background:#2563eb;color:white;padding:12px 14px;border-radius:8px;font-size:16px;font-weight:bold;margin-top:6px
 
 7. CONDITIONS PAIEMENT : div style="margin-bottom:20px;padding:14px;background:#f8fafc;border-radius:8px;font-size:12px;color:#475569;width:100%;box-sizing:border-box"
-   Acompte, solde, mode de règlement
+   Acompte : ${acompteMontant}€ à la commande
+   Solde : ${soldeMontant}€ à réception des travaux
+   Mode de règlement : Virement bancaire
+   ${user?.user_metadata?.['iban'] ? `IBAN : ${user?.user_metadata?.['iban']}` : ''}
+   ${user?.user_metadata?.['bic'] ? `BIC / SWIFT : ${user?.user_metadata?.['bic']}` : ''}
+   Chèque accepté
    ${penalite && penaliteTexte ? `Pénalité de retard : ${penaliteTexte}` : ''}
    ${annulation && annulationTexte ? `Annulation : ${annulationTexte}` : ''}
 
