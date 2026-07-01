@@ -1,8 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
+import SignatureCanvas from 'react-signature-canvas'
 
 export default function Profil() {
   const [user, setUser] = useState<User | null>(null)
@@ -10,7 +11,10 @@ export default function Profil() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [savingSignature, setSavingSignature] = useState(false)
   const [logoUrl, setLogoUrl] = useState('')
+  const [signatureUrl, setSignatureUrl] = useState('')
+  const sigCanvas = useRef<SignatureCanvas>(null)
   const [form, setForm] = useState({
     nom: '',
     metier: '',
@@ -49,8 +53,8 @@ export default function Profil() {
         iban: user.user_metadata?.['iban'] || '',
         bic: user.user_metadata?.['bic'] || '',
       }))
-      const logo = user.user_metadata?.['logo_url'] || ''
-      setLogoUrl(logo)
+      setLogoUrl(user.user_metadata?.['logo_url'] || '')
+      setSignatureUrl(user.user_metadata?.['signature_url'] || '')
       setLoading(false)
     }
     getUser()
@@ -58,7 +62,7 @@ export default function Profil() {
 
   const handleSave = async () => {
     setSaving(true)
-    await supabase.auth.updateUser({ data: { ...form, logo_url: logoUrl } })
+    await supabase.auth.updateUser({ data: { ...form, logo_url: logoUrl, signature_url: signatureUrl } })
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
@@ -76,8 +80,34 @@ export default function Profil() {
     const { data } = supabase.storage.from('logos').getPublicUrl(path)
     const url = data.publicUrl + '?t=' + Date.now()
     setLogoUrl(url)
-    await supabase.auth.updateUser({ data: { ...form, logo_url: url } })
+    await supabase.auth.updateUser({ data: { ...form, logo_url: url, signature_url: signatureUrl } })
     setUploadingLogo(false)
+  }
+
+  const handleSaveSignature = async () => {
+    if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
+      alert('Veuillez dessiner votre signature')
+      return
+    }
+    if (!user) return
+    setSavingSignature(true)
+    const dataUrl = sigCanvas.current.toDataURL('image/png')
+    const blob = await (await fetch(dataUrl)).blob()
+    const path = `${user.id}/signature.png`
+    const { error } = await supabase.storage.from('logos').upload(path, blob, { upsert: true, contentType: 'image/png' })
+    if (error) { alert('Erreur sauvegarde signature'); setSavingSignature(false); return }
+    const { data } = supabase.storage.from('logos').getPublicUrl(path)
+    const url = data.publicUrl + '?t=' + Date.now()
+    setSignatureUrl(url)
+    await supabase.auth.updateUser({ data: { ...form, logo_url: logoUrl, signature_url: url } })
+    setSavingSignature(false)
+    alert('Signature sauvegardée !')
+  }
+
+  const handleClearSignature = () => {
+    sigCanvas.current?.clear()
+    setSignatureUrl('')
+    supabase.auth.updateUser({ data: { ...form, logo_url: logoUrl, signature_url: '' } })
   }
 
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }))
@@ -122,12 +152,71 @@ export default function Profil() {
               </label>
               <p className="text-xs text-gray-400 mt-2">PNG ou JPG — max 2 Mo</p>
               {logoUrl && (
-                <button onClick={() => { setLogoUrl(''); supabase.auth.updateUser({ data: { ...form, logo_url: '' } }) }} className="text-xs text-red-400 hover:text-red-600 mt-1 block">
+                <button onClick={() => { setLogoUrl(''); supabase.auth.updateUser({ data: { ...form, logo_url: '', signature_url: signatureUrl } }) }} className="text-xs text-red-400 hover:text-red-600 mt-1 block">
                   Supprimer le logo
                 </button>
               )}
             </div>
           </div>
+        </div>
+
+        {/* Signature */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+          <h2 className="font-semibold text-gray-900 mb-2">Ma signature</h2>
+          <p className="text-xs text-gray-400 mb-4">Apparaîtra automatiquement sur tous vos devis envoyés</p>
+          {signatureUrl ? (
+            <div>
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-3">
+                <img src={signatureUrl} alt="Signature" className="max-h-20 object-contain" />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setSignatureUrl(''); sigCanvas.current?.clear() }}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  Redessiner
+                </button>
+                <button
+                  onClick={handleClearSignature}
+                  className="text-sm text-red-400 hover:text-red-600"
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="border-2 border-dashed border-gray-200 rounded-lg overflow-hidden mb-3 bg-white">
+                <SignatureCanvas
+                  ref={sigCanvas}
+                  canvasProps={{
+                    width: 500,
+                    height: 150,
+                    className: 'w-full',
+                    style: { touchAction: 'none' }
+                  }}
+                  backgroundColor="white"
+                  penColor="#1e293b"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mb-3">Dessinez votre signature avec le doigt ou la souris</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSaveSignature}
+                  disabled={savingSignature}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {savingSignature ? 'Sauvegarde...' : 'Sauvegarder ma signature'}
+                </button>
+                <button
+                  onClick={() => sigCanvas.current?.clear()}
+                  className="text-sm text-gray-400 hover:text-gray-600 px-4 py-2"
+                >
+                  Effacer
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Informations personnelles */}
@@ -161,60 +250,49 @@ export default function Profil() {
           </div>
         </div>
 
-{/* Coordonnées bancaires */}
-<div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
-  <h2 className="font-semibold text-gray-900 mb-4">Coordonnées bancaires</h2>
-  <p className="text-xs text-gray-400 mb-4">Apparaîtront dans la section règlement de vos devis pour faciliter les virements</p>
-  <div className="space-y-4">
-    <div>
-      <label className="text-sm text-gray-600 mb-1 block">IBAN</label>
-      <input
-        className={`w-full border rounded-lg px-4 py-3 text-sm focus:outline-none font-mono ${
-          form.iban.length === 0 ? 'border-gray-200 focus:border-blue-500' :
-          form.iban.replace(/\s/g, '').length >= 14 && form.iban.replace(/\s/g, '').length <= 34 ? 'border-green-400 bg-green-50' :
-          'border-red-400 bg-red-50'
-        }`}
-        value={form.iban}
-        onChange={e => set('iban', e.target.value.toUpperCase())}
-        placeholder="FR76 3000 6000 0112 3456 7890 189"
-      />
-      {form.iban.length > 0 && (
-        <p className={`text-xs mt-1 ${
-          form.iban.replace(/\s/g, '').length >= 14 && form.iban.replace(/\s/g, '').length <= 34
-            ? 'text-green-600' : 'text-red-500'
-        }`}>
-          {form.iban.replace(/\s/g, '').length >= 14 && form.iban.replace(/\s/g, '').length <= 34
-            ? '✓ IBAN valide'
-            : `⚠️ IBAN incorrect — vérifiez le numéro (${form.iban.replace(/\s/g, '').length} caractères)`
-          }
-        </p>
-      )}
-    </div>
-    <div>
-      <label className="text-sm text-gray-600 mb-1 block">BIC / SWIFT</label>
-      <input
-        className={`w-full border rounded-lg px-4 py-3 text-sm focus:outline-none font-mono ${
-          form.bic.length === 0 ? 'border-gray-200 focus:border-blue-500' :
-          form.bic.length >= 8 && form.bic.length <= 11 ? 'border-green-400 bg-green-50' :
-          'border-red-400 bg-red-50'
-        }`}
-        value={form.bic}
-        onChange={e => set('bic', e.target.value.toUpperCase())}
-        placeholder="BNPAFRPP"
-      />
-      {form.bic.length > 0 && (
-        <p className={`text-xs mt-1 ${
-          form.bic.length >= 8 && form.bic.length <= 11 ? 'text-green-600' : 'text-red-500'
-        }`}>
-          {form.bic.length >= 8 && form.bic.length <= 11
-            ? '✓ BIC valide'
-            : '⚠️ BIC incorrect — doit contenir 8 ou 11 caractères'
-          }
-        </p>
-      )}
-    </div>
-  </div>
-</div>
+        {/* Coordonnées bancaires */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+          <h2 className="font-semibold text-gray-900 mb-4">Coordonnées bancaires</h2>
+          <p className="text-xs text-gray-400 mb-4">Apparaîtront dans la section règlement de vos devis pour faciliter les virements</p>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm text-gray-600 mb-1 block">IBAN</label>
+              <input
+                className={`w-full border rounded-lg px-4 py-3 text-sm focus:outline-none font-mono ${
+                  form.iban.length === 0 ? 'border-gray-200 focus:border-blue-500' :
+                  form.iban.replace(/\s/g, '').length >= 14 && form.iban.replace(/\s/g, '').length <= 34 ? 'border-green-400 bg-green-50' :
+                  'border-red-400 bg-red-50'
+                }`}
+                value={form.iban}
+                onChange={e => set('iban', e.target.value.toUpperCase())}
+                placeholder="FR76 3000 6000 0112 3456 7890 189"
+              />
+              {form.iban.length > 0 && (
+                <p className={`text-xs mt-1 ${form.iban.replace(/\s/g, '').length >= 14 && form.iban.replace(/\s/g, '').length <= 34 ? 'text-green-600' : 'text-red-500'}`}>
+                  {form.iban.replace(/\s/g, '').length >= 14 && form.iban.replace(/\s/g, '').length <= 34 ? '✓ IBAN valide' : `⚠️ IBAN incorrect (${form.iban.replace(/\s/g, '').length} caractères)`}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600 mb-1 block">BIC / SWIFT</label>
+              <input
+                className={`w-full border rounded-lg px-4 py-3 text-sm focus:outline-none font-mono ${
+                  form.bic.length === 0 ? 'border-gray-200 focus:border-blue-500' :
+                  form.bic.length >= 8 && form.bic.length <= 11 ? 'border-green-400 bg-green-50' :
+                  'border-red-400 bg-red-50'
+                }`}
+                value={form.bic}
+                onChange={e => set('bic', e.target.value.toUpperCase())}
+                placeholder="BNPAFRPP"
+              />
+              {form.bic.length > 0 && (
+                <p className={`text-xs mt-1 ${form.bic.length >= 8 && form.bic.length <= 11 ? 'text-green-600' : 'text-red-500'}`}>
+                  {form.bic.length >= 8 && form.bic.length <= 11 ? '✓ BIC valide' : '⚠️ BIC incorrect — 8 ou 11 caractères'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Paramètres devis */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
