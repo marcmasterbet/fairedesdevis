@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     if (prestaEmail) {
       await resend.emails.send({
-        from: 'FaireDesDevis <noreply@fairedesdevis.fr>',
+        from: 'FaireDesDevis <onboarding@resend.dev>',
         to: prestaEmail,
         subject: sujet,
         html: `
