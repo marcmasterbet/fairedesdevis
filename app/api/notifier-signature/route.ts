@@ -3,30 +3,32 @@ import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const supabase = createClient(
+
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(req: NextRequest) {
-  const { devisId, action, nom, devis } = await req.json()
+  const { devisId, action, nom } = await req.json()
 
   try {
-    const { data: devisData } = await supabase
+    const { data: devisData } = await supabaseAdmin
       .from('devis')
-      .select('*, user_id')
+      .select('*')
       .eq('id', devisId)
       .single()
 
     if (!devisData) return NextResponse.json({ error: 'Devis introuvable' }, { status: 404 })
 
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(devisData.user_id)
+    const prestaEmail = userData?.user?.email
+    const prestaNom = userData?.user?.user_metadata?.['nom'] || 'Votre prestataire'
+
     const emoji = action === 'accepté' ? '✅' : '❌'
     const sujet = action === 'accepté'
       ? `${emoji} Devis ${devisData.numero} accepté par ${nom}`
       : `${emoji} Devis ${devisData.numero} refusé`
-
-    const { data: userData } = await supabase.auth.admin.getUserById(devisData.user_id)
-    const prestaEmail = userData?.user?.email
 
     if (prestaEmail) {
       await resend.emails.send({
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'accepté' && devisData.client_email) {
       await resend.emails.send({
-        from: 'FaireDesDevis <noreply@fairedesdevis.fr>',
+        from: 'FaireDesDevis <onboarding@resend.dev>',
         to: devisData.client_email,
         subject: `✅ Confirmation — Devis ${devisData.numero} accepté`,
         html: `
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
             </div>
             <div style="background:white;padding:32px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px">
               <p style="font-size:16px;color:#1e293b">Bonjour <strong>${nom}</strong>,</p>
-              <p style="color:#64748b">Voici la confirmation de votre acceptation du devis <strong>${devisData.numero}</strong>.</p>
+              <p style="color:#64748b">Voici la confirmation de votre acceptation du devis <strong>${devisData.numero}</strong> de <strong>${prestaNom}</strong>.</p>
               <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:8px;margin:20px 0">
                 <p style="margin:0;color:#16a34a;font-weight:bold">✅ Devis accepté</p>
                 <p style="margin:8px 0 0;color:#64748b;font-size:13px">Montant : ${Number(devisData.montant_ttc).toFixed(2)} € TTC</p>
