@@ -4,13 +4,13 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
-  const { devisId, clientEmail, clientNom, prestatairNom, numero, montantTTC, lienSignature } = await req.json()
+  const { devisId, clientEmail, clientNom, prestataireNom, numero, montantTTC, lienSignature } = await req.json()
 
   try {
     await resend.emails.send({
       from: 'FaireDesDevis <onboarding@resend.dev>',
       to: clientEmail,
-      subject: `Devis ${numero} de ${prestatairNom}`,
+      subject: `Devis ${numero} de ${prestataireNom}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
           <div style="background:#2563eb;padding:24px;border-radius:12px 12px 0 0;text-align:center">
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
           </div>
           <div style="background:white;padding:32px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px">
             <p style="font-size:16px;color:#1e293b">Bonjour <strong>${clientNom}</strong>,</p>
-            <p style="color:#64748b">Vous avez reçu un devis de la part de <strong>${prestatairNom}</strong>.</p>
+            <p style="color:#64748b">Vous avez reçu un devis de la part de <strong>${prestataireNom}</strong>.</p>
             <div style="background:#f8fafc;border-left:4px solid #2563eb;padding:16px;border-radius:0 8px 8px 0;margin:24px 0">
               <p style="margin:0;color:#64748b;font-size:14px">Devis N°</p>
               <p style="margin:4px 0 0;font-size:20px;font-weight:bold;color:#1e293b">${numero}</p>
