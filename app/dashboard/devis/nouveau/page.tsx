@@ -38,11 +38,6 @@ interface Ligne {
   type: 'produit' | 'main_oeuvre'
 }
 
-interface LigneAutre {
-  nom: string
-  montant: number
-}
-
 export default function NouveauDevis() {
   const [clients, setClients] = useState<Client[]>([])
   const [produits, setProduits] = useState<Produit[]>([])
@@ -63,9 +58,9 @@ export default function NouveauDevis() {
   const [heuresMainOeuvre, setHeuresMainOeuvre] = useState('')
   const [remiseValeur, setRemiseValeur] = useState('')
   const [remiseType, setRemiseType] = useState<'pourcent' | 'euro'>('pourcent')
-  const [ligneAutreNom, setLigneAutreNom] = useState('')
-  const [ligneAutreMontant, setLigneAutreMontant] = useState('')
-  const [lignesAutres, setLignesAutres] = useState<LigneAutre[]>([])
+  const [ligneLibreNom, setLigneLibreNom] = useState('')
+  const [ligneLibrePrix, setLigneLibrePrix] = useState('')
+  const [ligneLibreQte, setLigneLibreQte] = useState('1')
   const router = useRouter()
 
   useEffect(() => {
@@ -138,11 +133,24 @@ export default function NouveauDevis() {
     setHeuresMainOeuvre('')
   }
 
-  const ajouterLigneAutre = () => {
-    if (!ligneAutreNom.trim()) { alert('Indiquez un libelle'); return }
-    setLignesAutres(l => [...l, { nom: ligneAutreNom, montant: parseFloat(ligneAutreMontant) || 0 }])
-    setLigneAutreNom('')
-    setLigneAutreMontant('')
+  const ajouterLigneLibre = () => {
+    if (!ligneLibreNom.trim()) { alert('Indiquez un libelle'); return }
+    const prixHT = parseFloat(ligneLibrePrix) || 0
+    const qte = parseFloat(ligneLibreQte) || 1
+    const total = prixHT * qte
+    setLignes(l => [...l, {
+      produit_id: 'libre_' + Date.now(),
+      nom: ligneLibreNom,
+      reference: '',
+      quantite: qte,
+      prix_ht: prixHT,
+      total_ht: total,
+      unite: 'forfait',
+      type: 'produit'
+    }])
+    setLigneLibreNom('')
+    setLigneLibrePrix('')
+    setLigneLibreQte('1')
   }
 
   const totalHTBrut = lignes.reduce((s, l) => s + l.total_ht, 0)
@@ -151,7 +159,7 @@ export default function NouveauDevis() {
       ? totalHTBrut * parseFloat(remiseValeur) / 100
       : parseFloat(remiseValeur)
     : 0
-  const totalHT = totalHTBrut - remiseMontant + lignesAutres.reduce((s, la) => s + la.montant, 0)
+  const totalHT = totalHTBrut - remiseMontant
   const totalTVA = totalHT * tva / 100
   const totalTTC = totalHT + totalTVA
 
@@ -168,7 +176,7 @@ export default function NouveauDevis() {
 
   const handleGenerer = async () => {
     if (!clientId) { alert('Selectionnez un client'); return }
-    if (lignes.length === 0 && lignesAutres.length === 0) { alert('Ajoutez au moins un produit'); return }
+    if (lignes.length === 0) { alert('Ajoutez au moins un produit'); return }
     if (!description) { alert('Decrivez le chantier ou la mission'); return }
     setGenerating(true)
 
@@ -179,7 +187,7 @@ export default function NouveauDevis() {
     const acompteMontant = (totalTTC * parseInt(acompteVal) / 100).toFixed(2)
     const soldeMontant = (totalTTC * (1 - parseInt(acompteVal) / 100)).toFixed(2)
     const logoUrl = user?.user_metadata?.['logo_url'] || ''
-const signatureProUrl = user?.user_metadata?.['signature_url'] || ''
+    const signatureProUrl = user?.user_metadata?.['signature_url'] || ''
 
     const prompt = `Tu es un expert en creation de documents commerciaux professionnels francais.
 
@@ -193,6 +201,16 @@ REGLES ABSOLUES :
 - Police : Arial, sans-serif
 - RESPONSIVE : utilise des largeurs en % ou max-width
 - Sur le tableau utilise overflow-x:auto
+- NE JAMAIS RECALCULER LES MONTANTS - utilise EXACTEMENT les montants fournis
+
+STYLE EXACT A REPRODUIRE :
+- En-tete : nom prestataire bold a gauche, mot "DEVIS" en grand bleu #2563eb a droite avec numero et date en gris
+- Ligne bleue separatrice fine
+- Section client sur fond #f8fafc avec bordure gauche bleue #2563eb
+- Tableau prestations : header bleu #2563eb texte blanc, lignes alternees blanc/#f8fafc, TOUTES les lignes dans UN SEUL tableau
+- Recapitulatif a droite : Total HT brut, remise si presente, Total HT net, TVA, puis TOTAL TTC dans bloc bleu #2563eb texte blanc bold
+- Conditions paiement : acompte et solde
+- Zone signature en bas
 
 PRESTATAIRE :
 Nom : ${user?.user_metadata?.['nom'] || ''}
@@ -202,7 +220,7 @@ Adresse : ${user?.user_metadata?.['adresse'] || ''}
 Telephone : ${user?.user_metadata?.['telephone'] || ''}
 Email : ${user?.email || ''}
 Mentions : ${user?.user_metadata?.['mentions_legales'] || ''}
-Logo URL : ${logoUrl}
+${logoUrl ? 'Logo : <img src="' + logoUrl + '" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:8px;display:block" alt="Logo" />' : ''}
 
 CLIENT :
 Nom : ${client?.nom || ''}
@@ -219,20 +237,15 @@ Description : ${description}
 Date debut : ${dateDebut || 'A convenir'}
 Delai : ${delai || 'A convenir'}
 
-PRESTATIONS :
+TOUTES LES PRESTATIONS (format: Designation|Reference|Qte|Unite|Prix HT|Total HT) :
 ${lignes.map(l => l.nom + '|' + (l.reference || '-') + '|' + l.quantite + '|' + l.unite + '|' + l.prix_ht.toFixed(2) + ' EUR|' + l.total_ht.toFixed(2) + ' EUR').join('\n')}
 
-${lignesAutres.length > 0 ? 'LIGNES SUPPLEMENTAIRES :\n' + lignesAutres.map(la => la.nom + ' : ' + (la.montant > 0 ? la.montant.toFixed(2) + ' EUR' : 'Offert')).join('\n') : ''}
-
-${remiseMontant > 0 ? 'REMISE : -' + remiseMontant.toFixed(2) + ' EUR HT (' + (remiseType === 'pourcent' ? remiseValeur + '%' : remiseValeur + ' EUR fixes') + ')' : ''}
-
-MONTANTS :
-IMPORTANT : Utilise EXACTEMENT ces montants sans jamais recalculer :
+MONTANTS EXACTS A UTILISER SANS RECALCULER :
 Total HT brut : ${totalHTBrut.toFixed(2)} EUR
-${remiseMontant > 0 ? 'Remise : -' + remiseMontant.toFixed(2) + ' EUR (' + (remiseType === 'pourcent' ? remiseValeur + '%' : remiseValeur + ' EUR') + ')' : ''}
+${remiseMontant > 0 ? 'Remise (' + (remiseType === 'pourcent' ? remiseValeur + '%' : remiseValeur + ' EUR') + ') : -' + remiseMontant.toFixed(2) + ' EUR' : ''}
 Total HT net : ${totalHT.toFixed(2)} EUR
 TVA ${tva}% : ${totalTVA.toFixed(2)} EUR
-Total TTC : ${totalTTC.toFixed(2)} EUR
+TOTAL TTC : ${totalTTC.toFixed(2)} EUR
 Acompte ${acompteVal}% a la commande : ${acompteMontant} EUR
 Solde a reception des travaux : ${soldeMontant} EUR
 ${user?.user_metadata?.['iban'] ? 'IBAN : ' + user?.user_metadata?.['iban'] : ''}
@@ -241,39 +254,15 @@ ${user?.user_metadata?.['bic'] ? 'BIC : ' + user?.user_metadata?.['bic'] : ''}
 ${penalite && penaliteTexte ? 'PENALITE DE RETARD : ' + penaliteTexte : ''}
 ${annulation && annulationTexte ? 'CONDITIONS ANNULATION : ' + annulationTexte : ''}
 
-Genere EXACTEMENT ce style de devis :
-- En-tete : nom prestataire en bold a gauche, "DEVIS" en grand bleu #2563eb a droite avec numero et date
-- Ligne bleue separatrice
-- Section client avec bordure gauche bleue #2563eb sur fond #f8fafc
-- Tableau prestations avec header bleu #2563eb texte blanc, lignes alternees blanc/#f8fafc
-- Recapitulatif a droite : Total HT, TVA, puis Total TTC dans un bloc bleu #2563eb texte blanc bold
-- Conditions paiement : deux encadres cote a cote (acompte et solde)
-- Zone signature en bas avec Bon pour accord a gauche et Signature prestataire a droite
-- Pied de page sobre avec infos prestataire prestataire/devis, section client, tableau prestations, lignes supplementaires si presentes, remise si presente, recapitulatif financier, conditions paiement avec IBAN/BIC si fournis, et zone signature.
-${logoUrl ? 'Affiche le logo avec : <img src="' + logoUrl + '" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:8px;display:block" alt="Logo" />' : ''}
-
-ZONE SIGNATURE OBLIGATOIRE EN BAS DU DOCUMENT (DISPLAY:FLEX, JUSTIFY-CONTENT:SPACE-BETWEEN, GAP:40PX, MARGIN-TOP:40PX) :
-
-GAUCHE (FLEX:1, BORDER-TOP:2PX SOLID #E2E8F0, PADDING-TOP:12PX) :
-  TITRE "SIGNATURE DU CLIENT" (FONT-SIZE:13PX, FONT-WEIGHT:BOLD, COLOR:#1E293B)
-  TEXTE "EN SIGNANT ELECTRONIQUEMENT CE DEVIS, LE CLIENT DECLARE AVOIR LU ET APPROUVE L ENSEMBLE DES CONDITIONS." (FONT-SIZE:11PX, COLOR:#94A3B8, MARGIN-TOP:4PX)
-  GRANDE ZONE VIDE HEIGHT:80PX POUR SIGNATURE
-
-DROITE (FLEX:1, BORDER-TOP:2PX SOLID #E2E8F0, PADDING-TOP:12PX) :
-  TITRE "SIGNATURE DU PRESTATAIRE" (FONT-SIZE:13PX, FONT-WEIGHT:BOLD, COLOR:#1E293B)
-  NOM PRESTATAIRE (FONT-SIZE:12PX, COLOR:#64748B, MARGIN-TOP:4PX)
-  ${signatureProUrl ? '<IMG SRC="' + signatureProUrl + '" STYLE="MAX-HEIGHT:70PX;OBJECT-FIT:CONTAIN;DISPLAY:BLOCK;MARGIN-TOP:8PX" ALT="SIGNATURE" />' : 'LIGNE VIDE HEIGHT:60PX'}
-
-GENERE UNIQUEMENT LE HTML. RIEN AVANT, RIEN APRES. en bas du document (display:flex, justify-content:space-between, gap:40px, margin-top:40px) :
-GAUCHE (flex:1, border-top:2px solid #e2e8f0, padding-top:12px) : 
-  titre "Bon pour accord" (font-size:13px, font-weight:bold, color:#1e293b)
-  texte "Lu et approuve - Signature du client precedee de la mention manuscrite Bon pour accord" (font-size:11px, color:#94a3b8, margin-top:4px)
-  grande zone vide height:80px pour signature manuscrite
-
+ZONE SIGNATURE en bas du document (display:flex, justify-content:space-between, gap:40px, margin-top:40px) :
+GAUCHE (flex:1, border-top:2px solid #e2e8f0, padding-top:12px) :
+  titre "Signature du client" (font-size:13px, font-weight:bold, color:#1e293b)
+  texte "En signant electroniquement ce devis, le client declare avoir lu et approuve l ensemble des conditions." (font-size:11px, color:#94a3b8, margin-top:4px)
+  grande zone vide height:80px pour signature
 DROITE (flex:1, border-top:2px solid #e2e8f0, padding-top:12px) :
   titre "Signature du prestataire" (font-size:13px, font-weight:bold, color:#1e293b)
   nom prestataire (font-size:12px, color:#64748b, margin-top:4px)
-  ${signatureProUrl ? '<img src="' + signatureProUrl + '" style="max-height:70px;object-fit:contain;display:block;margin-top:8px" alt="Signature" />' : 'ligne de signature vide height:60px'}
+  ${signatureProUrl ? '<img src="' + signatureProUrl + '" style="max-height:70px;object-fit:contain;display:block;margin-top:8px" alt="Signature" />' : 'ligne vide height:60px'}
 
 Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
 
@@ -311,7 +300,7 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
       if (devisData && devisData[0]) {
         await supabase.from('devis_lignes').insert(
           lignes.map(l => ({
-            produit_id: l.type === 'main_oeuvre' ? null : l.produit_id,
+            produit_id: l.produit_id.startsWith('libre_') ? null : l.type === 'main_oeuvre' ? null : l.produit_id,
             nom: l.nom,
             reference: l.reference,
             quantite: l.quantite,
@@ -336,7 +325,7 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <Header back="/dashboard/devis" backLabel="← Mes devis" />
+      <Header back="/dashboard/devis" backLabel="Mes devis" />
 
       <div className="max-w-3xl mx-auto px-6 py-8 pb-24">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Nouveau devis</h1>
@@ -344,30 +333,17 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
         {/* 1. Client */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h2 className="font-semibold text-gray-900 mb-4">1. Client</h2>
-          <select
-            className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-            value={clientId}
-            onChange={e => setClientId(e.target.value)}
-          >
+          <select className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500" value={clientId} onChange={e => setClientId(e.target.value)}>
             <option value="">Selectionner un client...</option>
-            {clients.map(c => (
-              <option key={c.id} value={c.id}>{c.nom} — {c.email}</option>
-            ))}
+            {clients.map(c => <option key={c.id} value={c.id}>{c.nom} — {c.email}</option>)}
           </select>
-          {clients.length === 0 && (
-            <p className="text-sm text-gray-400 mt-2">Aucun client — <a href="/dashboard/clients" className="text-blue-600">ajouter un client</a></p>
-          )}
+          {clients.length === 0 && <p className="text-sm text-gray-400 mt-2">Aucun client — <a href="/dashboard/clients" className="text-blue-600">ajouter un client</a></p>}
         </div>
 
         {/* 2. Description */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h2 className="font-semibold text-gray-900 mb-4">2. Description du chantier</h2>
-          <textarea
-            className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 h-24 resize-none"
-            placeholder="Decrivez le chantier ou la mission..."
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-          />
+          <textarea className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 h-24 resize-none" placeholder="Decrivez le chantier ou la mission..." value={description} onChange={e => setDescription(e.target.value)} />
           <div className="grid grid-cols-2 gap-4 mt-3">
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Date de debut</label>
@@ -388,12 +364,7 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
             <p className="text-sm text-gray-400">Aucun produit — <a href="/dashboard/catalogue" className="text-blue-600">ajouter au catalogue</a></p>
           ) : (
             <div className="relative mb-4">
-              <input
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-                placeholder="Rechercher un produit..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+              <input className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500" placeholder="Rechercher un produit..." value={search} onChange={e => setSearch(e.target.value)} />
               {resultats.length > 0 && (
                 <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 overflow-y-auto">
                   {resultats.map(produit => (
@@ -426,11 +397,7 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
                   <input
                     type="number" min="1" inputMode="numeric"
                     value={ligne.quantite === 0 ? '' : ligne.quantite}
-                    onChange={e => {
-                      const val = e.target.value
-                      if (val === '') updateQuantite(ligne.produit_id, 0)
-                      else { const num = parseInt(val); if (!isNaN(num)) updateQuantite(ligne.produit_id, num) }
-                    }}
+                    onChange={e => { const val = e.target.value; if (val === '') updateQuantite(ligne.produit_id, 0); else { const num = parseInt(val); if (!isNaN(num)) updateQuantite(ligne.produit_id, num) } }}
                     onBlur={e => { if (e.target.value === '' || parseInt(e.target.value) < 1) updateQuantite(ligne.produit_id, 1) }}
                     className="w-16 border border-blue-300 rounded px-2 py-1 text-sm text-center bg-white"
                   />
@@ -459,28 +426,18 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
                 <button onClick={ajouterMainOeuvre} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap">+ Ajouter</button>
               </div>
             )}
-            {!tauxHoraire && (
-              <p className="text-xs text-amber-600 mt-2">Renseignez votre taux horaire dans <a href="/dashboard/profil" className="underline">votre profil</a></p>
-            )}
+            {!tauxHoraire && <p className="text-xs text-amber-600 mt-2">Renseignez votre taux horaire dans <a href="/dashboard/profil" className="underline">votre profil</a></p>}
           </div>
 
           {/* Ligne libre */}
           <div className="border-t border-gray-100 pt-4 mt-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Ligne libre</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Ligne libre (hors catalogue)</p>
             <div className="flex items-center gap-2 flex-wrap">
-              <input type="text" className="flex-1 min-w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Ex: Trajet offert, Frais deplacement..." value={ligneAutreNom} onChange={e => setLigneAutreNom(e.target.value)} />
-              <input type="number" className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Montant" value={ligneAutreMontant} onChange={e => setLigneAutreMontant(e.target.value)} />
-              <button onClick={ajouterLigneAutre} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap">+ Ajouter</button>
+              <input type="text" className="flex-1 min-w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Ex: Trajet, Materiel special..." value={ligneLibreNom} onChange={e => setLigneLibreNom(e.target.value)} />
+              <input type="number" className="w-16 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Qte" value={ligneLibreQte} onChange={e => setLigneLibreQte(e.target.value)} />
+              <input type="number" className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Prix HT" value={ligneLibrePrix} onChange={e => setLigneLibrePrix(e.target.value)} />
+              <button onClick={ajouterLigneLibre} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap">+ Ajouter</button>
             </div>
-            {lignesAutres.map((la, i) => (
-              <div key={i} className="flex items-center justify-between p-3 mt-2 rounded-lg border border-gray-200 bg-gray-50">
-                <span className="text-sm text-gray-700">{la.nom}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-900">{la.montant > 0 ? la.montant.toFixed(2) + ' EUR' : 'Offert'}</span>
-                  <button onClick={() => setLignesAutres(l => l.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 text-xs px-1">X</button>
-                </div>
-              </div>
-            ))}
           </div>
 
           {/* Remise */}
@@ -493,15 +450,13 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
                 <option value="euro">EUR</option>
               </select>
               {remiseValeur && parseFloat(remiseValeur) > 0 && (
-                <span className="text-sm text-green-600 font-medium">
-                  - {remiseMontant.toFixed(2)} EUR HT
-                </span>
+                <span className="text-sm text-green-600 font-medium">- {remiseMontant.toFixed(2)} EUR HT</span>
               )}
             </div>
           </div>
 
           {/* Recapitulatif */}
-          {(lignes.length > 0 || lignesAutres.length > 0) && (
+          {lignes.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-100">
               {remiseMontant > 0 && (
                 <div className="flex justify-between text-sm text-green-600 mb-1">
@@ -509,12 +464,6 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
                   <span>- {remiseMontant.toFixed(2)} EUR</span>
                 </div>
               )}
-              {lignesAutres.filter(la => la.montant > 0).map((la, i) => (
-                <div key={i} className="flex justify-between text-sm text-gray-500 mb-1">
-                  <span>{la.nom}</span>
-                  <span>{la.montant.toFixed(2)} EUR</span>
-                </div>
-              ))}
               <div className="flex justify-between text-sm text-gray-500 mb-1"><span>Total HT</span><span>{totalHT.toFixed(2)} EUR</span></div>
               <div className="flex justify-between text-sm text-gray-500 mb-1"><span>TVA {tva}%</span><span>{totalTVA.toFixed(2)} EUR</span></div>
               <div className="flex justify-between font-bold text-gray-900 text-lg"><span>Total TTC</span><span>{totalTTC.toFixed(2)} EUR</span></div>
@@ -531,27 +480,19 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
                 <input type="checkbox" checked={penalite} onChange={e => setPenalite(e.target.checked)} className="accent-blue-600 w-4 h-4" />
                 <span className="text-sm text-gray-700">Penalite de retard</span>
               </label>
-              {penalite && (
-                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: 1% du montant par semaine de retard..." value={penaliteTexte} onChange={e => setPenaliteTexte(e.target.value)} />
-              )}
+              {penalite && <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: 1% du montant par semaine de retard..." value={penaliteTexte} onChange={e => setPenaliteTexte(e.target.value)} />}
             </div>
             <div>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={annulation} onChange={e => setAnnulation(e.target.checked)} className="accent-blue-600 w-4 h-4" />
                 <span className="text-sm text-gray-700">Conditions d annulation</span>
               </label>
-              {annulation && (
-                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: En cas d annulation, l acompte reste acquis..." value={annulationTexte} onChange={e => setAnnulationTexte(e.target.value)} />
-              )}
+              {annulation && <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: En cas d annulation, l acompte reste acquis..." value={annulationTexte} onChange={e => setAnnulationTexte(e.target.value)} />}
             </div>
           </div>
         </div>
 
-        <button
-          onClick={handleGenerer}
-          disabled={generating}
-          className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 transition"
-        >
+        <button onClick={handleGenerer} disabled={generating} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 transition">
           {generating ? 'Generation en cours...' : 'Generer mon devis avec l IA'}
         </button>
       </div>
