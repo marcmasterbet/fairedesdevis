@@ -179,6 +179,7 @@ export default function NouveauDevis() {
     const acompteMontant = (totalTTC * parseInt(acompteVal) / 100).toFixed(2)
     const soldeMontant = (totalTTC * (1 - parseInt(acompteVal) / 100)).toFixed(2)
     const logoUrl = user?.user_metadata?.['logo_url'] || ''
+const signatureProUrl = user?.user_metadata?.['signature_url'] || ''
 
     const prompt = `Tu es un expert en creation de documents commerciaux professionnels francais.
 
@@ -241,6 +242,17 @@ ${annulation && annulationTexte ? 'CONDITIONS ANNULATION : ' + annulationTexte :
 
 Genere un devis professionnel complet avec en-tete prestataire/devis, section client, tableau prestations, lignes supplementaires si presentes, remise si presente, recapitulatif financier, conditions paiement avec IBAN/BIC si fournis, et zone signature.
 ${logoUrl ? 'Affiche le logo avec : <img src="' + logoUrl + '" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:8px;display:block" alt="Logo" />' : ''}
+
+ZONE SIGNATURE OBLIGATOIRE en bas du document (display:flex, justify-content:space-between, gap:40px, margin-top:40px) :
+GAUCHE (flex:1, border-top:2px solid #e2e8f0, padding-top:12px) : 
+  titre "Bon pour accord" (font-size:13px, font-weight:bold, color:#1e293b)
+  texte "Lu et approuve - Signature du client precedee de la mention manuscrite Bon pour accord" (font-size:11px, color:#94a3b8, margin-top:4px)
+  grande zone vide height:80px pour signature manuscrite
+
+DROITE (flex:1, border-top:2px solid #e2e8f0, padding-top:12px) :
+  titre "Signature du prestataire" (font-size:13px, font-weight:bold, color:#1e293b)
+  nom prestataire (font-size:12px, color:#64748b, margin-top:4px)
+  ${signatureProUrl ? '<img src="' + signatureProUrl + '" style="max-height:70px;object-fit:contain;display:block;margin-top:8px" alt="Signature" />' : 'ligne de signature vide height:60px'}
 
 Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
 
