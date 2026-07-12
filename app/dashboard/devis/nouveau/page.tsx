@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../../lib/supabase'
+import { useRouter } from 'next/navigation'
 import NavBar from '../../../components/NavBar'
 import Header from '../../../components/Header'
-import { useRouter } from 'next/navigation'
 
 interface Client {
   id: string
@@ -38,6 +38,11 @@ interface Ligne {
   type: 'produit' | 'main_oeuvre'
 }
 
+interface LigneAutre {
+  nom: string
+  montant: number
+}
+
 export default function NouveauDevis() {
   const [clients, setClients] = useState<Client[]>([])
   const [produits, setProduits] = useState<Produit[]>([])
@@ -56,6 +61,11 @@ export default function NouveauDevis() {
   const [tauxHoraire, setTauxHoraire] = useState(0)
   const [search, setSearch] = useState('')
   const [heuresMainOeuvre, setHeuresMainOeuvre] = useState('')
+  const [remiseValeur, setRemiseValeur] = useState('')
+  const [remiseType, setRemiseType] = useState<'pourcent' | 'euro'>('pourcent')
+  const [ligneAutreNom, setLigneAutreNom] = useState('')
+  const [ligneAutreMontant, setLigneAutreMontant] = useState('')
+  const [lignesAutres, setLignesAutres] = useState<LigneAutre[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -109,15 +119,15 @@ export default function NouveauDevis() {
 
   const ajouterMainOeuvre = () => {
     const heures = parseFloat(heuresMainOeuvre.replace(',', '.'))
-    if (!heures || heures <= 0) { alert('Indiquez un nombre d\'heures valide'); return }
+    if (!heures || heures <= 0) { alert('Indiquez un nombre d heures valide'); return }
     if (!tauxHoraire) { alert('Renseignez votre taux horaire dans votre profil'); return }
     const total = heures * tauxHoraire
     const h = Math.floor(heures)
     const m = Math.round((heures - h) * 60)
-    const dureeLabel = m > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${h}h`
+    const dureeLabel = m > 0 ? h + 'h' + m.toString().padStart(2, '0') : h + 'h'
     setLignes(l => [...l.filter(li => li.type !== 'main_oeuvre'), {
       produit_id: 'main_oeuvre',
-      nom: `Main d'oeuvre (${dureeLabel})`,
+      nom: 'Main d oeuvre (' + dureeLabel + ')',
       reference: '',
       quantite: heures,
       prix_ht: tauxHoraire,
@@ -128,7 +138,20 @@ export default function NouveauDevis() {
     setHeuresMainOeuvre('')
   }
 
-  const totalHT = lignes.reduce((s, l) => s + l.total_ht, 0)
+  const ajouterLigneAutre = () => {
+    if (!ligneAutreNom.trim()) { alert('Indiquez un libelle'); return }
+    setLignesAutres(l => [...l, { nom: ligneAutreNom, montant: parseFloat(ligneAutreMontant) || 0 }])
+    setLigneAutreNom('')
+    setLigneAutreMontant('')
+  }
+
+  const totalHTBrut = lignes.reduce((s, l) => s + l.total_ht, 0)
+  const remiseMontant = remiseValeur && parseFloat(remiseValeur) > 0
+    ? remiseType === 'pourcent'
+      ? totalHTBrut * parseFloat(remiseValeur) / 100
+      : parseFloat(remiseValeur)
+    : 0
+  const totalHT = totalHTBrut - remiseMontant + lignesAutres.reduce((s, la) => s + la.montant, 0)
   const totalTVA = totalHT * tva / 100
   const totalTTC = totalHT + totalTVA
 
@@ -144,121 +167,82 @@ export default function NouveauDevis() {
   const lignesProduits = lignes.filter(l => l.type === 'produit')
 
   const handleGenerer = async () => {
-    if (!clientId) { alert('Sélectionnez un client'); return }
-    if (lignes.length === 0) { alert('Ajoutez au moins un produit ou de la main d\'oeuvre'); return }
-    if (!description) { alert('Décrivez le chantier ou la mission'); return }
+    if (!clientId) { alert('Selectionnez un client'); return }
+    if (lignes.length === 0 && lignesAutres.length === 0) { alert('Ajoutez au moins un produit'); return }
+    if (!description) { alert('Decrivez le chantier ou la mission'); return }
     setGenerating(true)
 
     const { data: { user } } = await supabase.auth.getUser()
     const client = clients.find(c => c.id === clientId)
-    const numero = `DEV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
+    const numero = 'DEV-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-4)
     const acompteVal = user?.user_metadata?.['acompte'] || '30'
     const acompteMontant = (totalTTC * parseInt(acompteVal) / 100).toFixed(2)
     const soldeMontant = (totalTTC * (1 - parseInt(acompteVal) / 100)).toFixed(2)
     const logoUrl = user?.user_metadata?.['logo_url'] || ''
-    const ibanVal = user?.user_metadata?.['iban'] || ''
-    const bicVal = user?.user_metadata?.['bic'] || ''
 
-    const prompt = `Tu es un expert en création de documents commerciaux professionnels français.
+    const prompt = `Tu es un expert en creation de documents commerciaux professionnels francais.
 
-Génère un devis en HTML avec CSS inline. Le rendu doit être MAGNIFIQUE, professionnel, et OBLIGATOIREMENT responsive pour s'afficher parfaitement aussi bien sur ordinateur que sur téléphone mobile.
+Genere un devis en HTML avec CSS inline. Le rendu doit etre MAGNIFIQUE, professionnel, et OBLIGATOIREMENT responsive.
 
-RÈGLES ABSOLUES :
+REGLES ABSOLUES :
 - HTML pur avec CSS inline uniquement
-- Pas de markdown, pas de #, pas de **, pas de backticks, pas de commentaires
+- Pas de markdown, pas de #, pas de **, pas de backticks
 - Pas de balises html, head, body, style
-- Couleur principale : #2563eb (bleu)
+- Couleur principale : #2563eb
 - Police : Arial, sans-serif
-- Fond blanc pur
-- RESPONSIVE OBLIGATOIRE : utilise des largeurs en % ou max-width, jamais de largeur fixe en pixels supérieure à 100%
-- Le conteneur principal doit avoir width:100% et box-sizing:border-box
-- Sur le tableau des prestations, enveloppe-le dans un div avec style="overflow-x:auto;width:100%" pour permettre le défilement horizontal sur petit écran
-- Les sections d'en-tête doivent utiliser flex-wrap:wrap pour s'empiler verticalement sur petit écran
-- Tailles de police entre 11px et 16px pour le texte courant
+- RESPONSIVE : utilise des largeurs en % ou max-width
+- Sur le tableau utilise overflow-x:auto
 
-DONNÉES PRESTATAIRE :
+PRESTATAIRE :
 Nom : ${user?.user_metadata?.['nom'] || ''}
-Métier : ${user?.user_metadata?.['metier'] || ''}
+Metier : ${user?.user_metadata?.['metier'] || ''}
 SIRET : ${user?.user_metadata?.['siret'] || ''}
 Adresse : ${user?.user_metadata?.['adresse'] || ''}
-Téléphone : ${user?.user_metadata?.['telephone'] || ''}
+Telephone : ${user?.user_metadata?.['telephone'] || ''}
 Email : ${user?.email || ''}
-Mentions légales : ${user?.user_metadata?.['mentions_legales'] || ''}
+Mentions : ${user?.user_metadata?.['mentions_legales'] || ''}
 Logo URL : ${logoUrl}
 
-DONNÉES CLIENT :
+CLIENT :
 Nom : ${client?.nom || ''}
 Email : ${client?.email || ''}
-Téléphone mobile : ${client?.telephone || ''}
-Téléphone fixe : ${client?.telephone_fixe || ''}
+Telephone mobile : ${client?.telephone || ''}
+Telephone fixe : ${client?.telephone_fixe || ''}
 Adresse : ${client?.adresse || ''} ${client?.code_postal || ''} ${client?.ville || ''} ${client?.pays || ''}
 SIRET : ${client?.siret || 'Particulier'}
 
-DEVIS N° ${numero}
+DEVIS N : ${numero}
 Date : ${new Date().toLocaleDateString('fr-FR')}
-Validité : ${user?.user_metadata?.['delai_validite'] || 30} jours
+Validite : ${user?.user_metadata?.['delai_validite'] || 30} jours
 Description : ${description}
-Date de début : ${dateDebut || 'À convenir'}
-Délai d'exécution : ${delai || 'À convenir'}
+Date debut : ${dateDebut || 'A convenir'}
+Delai : ${delai || 'A convenir'}
 
 PRESTATIONS :
-${lignes.map(l => `${l.nom}|${l.reference || '-'}|${l.quantite}|${l.unite}|${l.prix_ht.toFixed(2)}€|${l.total_ht.toFixed(2)}€`).join('\n')}
+${lignes.map(l => l.nom + '|' + (l.reference || '-') + '|' + l.quantite + '|' + l.unite + '|' + l.prix_ht.toFixed(2) + ' EUR|' + l.total_ht.toFixed(2) + ' EUR').join('\n')}
+
+${lignesAutres.length > 0 ? 'LIGNES SUPPLEMENTAIRES :\n' + lignesAutres.map(la => la.nom + ' : ' + (la.montant > 0 ? la.montant.toFixed(2) + ' EUR' : 'Offert')).join('\n') : ''}
+
+${remiseMontant > 0 ? 'REMISE : -' + remiseMontant.toFixed(2) + ' EUR HT (' + (remiseType === 'pourcent' ? remiseValeur + '%' : remiseValeur + ' EUR fixes') + ')' : ''}
 
 MONTANTS :
-Total HT : ${totalHT.toFixed(2)}€
-TVA ${tva}% : ${totalTVA.toFixed(2)}€
-Total TTC : ${totalTTC.toFixed(2)}€
-Acompte ${acompteVal}% à la commande : ${acompteMontant}€
-Solde à réception des travaux : ${soldeMontant}€
+Total HT brut : ${totalHTBrut.toFixed(2)} EUR
+${remiseMontant > 0 ? 'Remise : -' + remiseMontant.toFixed(2) + ' EUR' : ''}
+Total HT net : ${totalHT.toFixed(2)} EUR
+TVA ${tva}% : ${totalTVA.toFixed(2)} EUR
+Total TTC : ${totalTTC.toFixed(2)} EUR
+Acompte ${acompteVal}% a la commande : ${acompteMontant} EUR
+Solde a reception des travaux : ${soldeMontant} EUR
+${user?.user_metadata?.['iban'] ? 'IBAN : ' + user?.user_metadata?.['iban'] : ''}
+${user?.user_metadata?.['bic'] ? 'BIC : ' + user?.user_metadata?.['bic'] : ''}
 
-${penalite && penaliteTexte ? `PÉNALITÉ DE RETARD : ${penaliteTexte}` : ''}
-${annulation && annulationTexte ? `CONDITIONS D'ANNULATION : ${annulationTexte}` : ''}
+${penalite && penaliteTexte ? 'PENALITE DE RETARD : ' + penaliteTexte : ''}
+${annulation && annulationTexte ? 'CONDITIONS ANNULATION : ' + annulationTexte : ''}
 
-GÉNÈRE CE HTML EXACTEMENT DANS CET ORDRE :
+Genere un devis professionnel complet avec en-tete prestataire/devis, section client, tableau prestations, lignes supplementaires si presentes, remise si presente, recapitulatif financier, conditions paiement avec IBAN/BIC si fournis, et zone signature.
+${logoUrl ? 'Affiche le logo avec : <img src="' + logoUrl + '" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:8px;display:block" alt="Logo" />' : ''}
 
-1. EN-TÊTE : div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:32px;width:100%;box-sizing:border-box"
-   GAUCHE div style="flex:1;min-width:200px" :
-   ${logoUrl ? `IMPORTANT : affiche le logo en premier avec cette balise exacte : <img src="${logoUrl}" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:8px;display:block" alt="Logo" />` : ''}
-   puis nom prestataire (font-size:20px, font-weight:bold, color:#1e293b), métier (color:#2563eb, font-size:13px, margin:4px 0), puis adresse téléphone email en petit (font-size:12px, color:#64748b, line-height:1.6, word-break:break-word)
-   DROITE div style="flex:1;min-width:160px;text-align:right" : "DEVIS" (font-size:28px, font-weight:bold, color:#2563eb), numéro (font-size:13px, color:#64748b), date et validité (font-size:11px, color:#94a3b8)
-
-2. LIGNE BLEUE : div style="height:3px;background:#2563eb;margin:0 0 24px 0;width:100%"
-
-3. SECTION CLIENT : div style="background:#f8fafc;border-left:4px solid #2563eb;padding:14px 16px;margin-bottom:24px;border-radius:0 8px 8px 0;width:100%;box-sizing:border-box"
-   Label "DEVIS ÉTABLI POUR" (font-size:10px, color:#94a3b8, letter-spacing:1px, text-transform:uppercase, margin-bottom:6px)
-   Nom client (font-size:15px, font-weight:bold, color:#1e293b)
-   Adresse, email, téléphone (font-size:12px, color:#64748b, line-height:1.8, word-break:break-word)
-
-4. DESCRIPTION : si présente, div style="margin-bottom:20px;padding:12px 14px;background:#fefce8;border-radius:8px;border:1px solid #fef08a;font-size:13px;width:100%;box-sizing:border-box"
-
-5. TABLEAU PRESTATIONS : enveloppé dans div style="overflow-x:auto;width:100%;margin-bottom:20px"
-   table style="width:100%;min-width:480px;border-collapse:collapse;font-size:12px"
-   HEADER tr style="background:#2563eb;color:white"
-   th style="padding:8px 10px;text-align:left;white-space:nowrap" : Désignation, Réf., Qté, Unité, Prix HT, Total HT
-   LIGNES alternées : tr style="background:white" et tr style="background:#f8fafc"
-   td style="padding:8px 10px;border-bottom:1px solid #e2e8f0"
-   Dernière colonne : text-align:right;font-weight:500;white-space:nowrap
-
-6. RÉCAPITULATIF : div style="margin-left:auto;width:100%;max-width:280px;margin-bottom:28px"
-   Ligne HT et TVA : display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:13px
-   Ligne TOTAL TTC : display:flex;justify-content:space-between;background:#2563eb;color:white;padding:12px 14px;border-radius:8px;font-size:16px;font-weight:bold;margin-top:6px
-
-7. CONDITIONS PAIEMENT : div style="margin-bottom:20px;padding:14px;background:#f8fafc;border-radius:8px;font-size:12px;color:#475569;width:100%;box-sizing:border-box"
-   Acompte : ${acompteMontant}€ à la commande
-   Solde : ${soldeMontant}€ à réception des travaux
-   Mode de règlement : Virement bancaire
-   ${user?.user_metadata?.['iban'] ? `IBAN : ${user?.user_metadata?.['iban']}` : ''}
-   ${user?.user_metadata?.['bic'] ? `BIC / SWIFT : ${user?.user_metadata?.['bic']}` : ''}
-   Chèque accepté
-   ${penalite && penaliteTexte ? `Pénalité de retard : ${penaliteTexte}` : ''}
-   ${annulation && annulationTexte ? `Annulation : ${annulationTexte}` : ''}
-
-8. ZONE SIGNATURE : div style="display:flex;flex-wrap:wrap;justify-content:space-between;margin-top:32px;gap:24px"
-   GAUCHE et DROITE : div style="flex:1;min-width:200px;border-top:2px solid #e2e8f0;padding-top:10px;font-size:11px"
-
-9. PIED DE PAGE : div style="margin-top:32px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center;line-height:1.8;word-break:break-word"
-
-Génère UNIQUEMENT le HTML. Rien avant, rien après.`
+Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
 
     try {
       const response = await fetch('/api/generer-devis', {
@@ -275,7 +259,7 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
         client_id: clientId,
         client_nom: client?.nom,
         client_email: client?.email,
-        client_adresse: `${client?.adresse || ''} ${client?.code_postal || ''} ${client?.ville || ''}`.trim(),
+        client_adresse: (client?.adresse || '') + ' ' + (client?.code_postal || '') + ' ' + (client?.ville || ''),
         client_siret: client?.siret,
         description,
         date_debut: dateDebut,
@@ -303,10 +287,10 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
             devis_id: devisData[0].id
           }))
         )
-        router.push(`/dashboard/devis/${devisData[0].id}`)
+        router.push('/dashboard/devis/' + devisData[0].id)
       }
     } catch {
-      alert('Erreur lors de la génération — réessayez')
+      alert('Erreur lors de la generation')
       setGenerating(false)
     }
   }
@@ -332,7 +316,7 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
             value={clientId}
             onChange={e => setClientId(e.target.value)}
           >
-            <option value="">Sélectionner un client...</option>
+            <option value="">Selectionner un client...</option>
             {clients.map(c => (
               <option key={c.id} value={c.id}>{c.nom} — {c.email}</option>
             ))}
@@ -347,17 +331,17 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
           <h2 className="font-semibold text-gray-900 mb-4">2. Description du chantier</h2>
           <textarea
             className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 h-24 resize-none"
-            placeholder="Décrivez le chantier ou la mission..."
+            placeholder="Decrivez le chantier ou la mission..."
             value={description}
             onChange={e => setDescription(e.target.value)}
           />
           <div className="grid grid-cols-2 gap-4 mt-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Date de début</label>
+              <label className="text-xs text-gray-500 mb-1 block">Date de debut</label>
               <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Délai d&apos;exécution</label>
+              <label className="text-xs text-gray-500 mb-1 block">Delai d execution</label>
               <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="ex: 2 semaines" value={delai} onChange={e => setDelai(e.target.value)} />
             </div>
           </div>
@@ -373,30 +357,26 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
             <div className="relative mb-4">
               <input
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-                placeholder="🔍 Rechercher un produit..."
+                placeholder="Rechercher un produit..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
               {resultats.length > 0 && (
                 <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 overflow-y-auto">
                   {resultats.map(produit => (
-                    <div
-                      key={produit.id}
-                      onClick={() => ajouterProduit(produit)}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                    >
+                    <div key={produit.id} onClick={() => ajouterProduit(produit)} className="flex items-center justify-between px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{produit.nom}</p>
-                        <p className="text-xs text-gray-400">{produit.categorie}{produit.reference ? ` · ${produit.reference}` : ''}</p>
+                        <p className="text-xs text-gray-400">{produit.categorie}{produit.reference ? ' · ' + produit.reference : ''}</p>
                       </div>
-                      <span className="text-sm font-semibold text-blue-600">{produit.prix_ht}€</span>
+                      <span className="text-sm font-semibold text-blue-600">{produit.prix_ht} EUR</span>
                     </div>
                   ))}
                 </div>
               )}
               {search.length >= 1 && resultats.length === 0 && (
                 <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm text-gray-400">
-                  Aucun produit trouvé
+                  Aucun produit trouve
                 </div>
               )}
             </div>
@@ -411,79 +391,112 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
                     {ligne.reference && <p className="text-xs text-gray-400">{ligne.reference}</p>}
                   </div>
                   <input
-                    type="number"
-                    min="1"
-                    inputMode="numeric"
+                    type="number" min="1" inputMode="numeric"
                     value={ligne.quantite === 0 ? '' : ligne.quantite}
                     onChange={e => {
                       const val = e.target.value
                       if (val === '') updateQuantite(ligne.produit_id, 0)
-                      else {
-                        const num = parseInt(val)
-                        if (!isNaN(num)) updateQuantite(ligne.produit_id, num)
-                      }
+                      else { const num = parseInt(val); if (!isNaN(num)) updateQuantite(ligne.produit_id, num) }
                     }}
-                    onBlur={e => {
-                      if (e.target.value === '' || parseInt(e.target.value) < 1) updateQuantite(ligne.produit_id, 1)
-                    }}
+                    onBlur={e => { if (e.target.value === '' || parseInt(e.target.value) < 1) updateQuantite(ligne.produit_id, 1) }}
                     className="w-16 border border-blue-300 rounded px-2 py-1 text-sm text-center bg-white"
                   />
-                  <span className="text-sm font-semibold text-gray-900 w-20 text-right">{ligne.total_ht.toFixed(2)}€</span>
-                  <button onClick={() => supprimerLigne(ligne.produit_id)} className="text-red-400 hover:text-red-600 text-sm px-1">✕</button>
+                  <span className="text-sm font-semibold text-gray-900 w-20 text-right">{ligne.total_ht.toFixed(2)} EUR</span>
+                  <button onClick={() => supprimerLigne(ligne.produit_id)} className="text-red-400 hover:text-red-600 text-sm px-1">X</button>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Main d'oeuvre */}
+          {/* Main d oeuvre */}
           <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Main d&apos;oeuvre</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Main d oeuvre</p>
             {mainOeuvreLigne ? (
               <div className="flex items-center gap-3 p-3 rounded-lg border border-green-200 bg-green-50">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">{mainOeuvreLigne.nom}</p>
-                  <p className="text-xs text-gray-400">{tauxHoraire}€/h</p>
+                  <p className="text-xs text-gray-400">{tauxHoraire} EUR/h</p>
                 </div>
-                <span className="text-sm font-semibold text-gray-900">{mainOeuvreLigne.total_ht.toFixed(2)}€</span>
-                <button onClick={() => supprimerLigne('main_oeuvre')} className="text-red-400 hover:text-red-600 text-sm px-1">✕</button>
+                <span className="text-sm font-semibold text-gray-900">{mainOeuvreLigne.total_ht.toFixed(2)} EUR</span>
+                <button onClick={() => supprimerLigne('main_oeuvre')} className="text-red-400 hover:text-red-600 text-sm px-1">X</button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="Nombre d'heures ex: 1.5 pour 1h30"
-                  value={heuresMainOeuvre}
-                  onChange={e => setHeuresMainOeuvre(e.target.value)}
-                />
-                <button onClick={ajouterMainOeuvre} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap">
-                  + Ajouter
-                </button>
+                <input type="text" inputMode="decimal" className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Heures ex: 1.5 pour 1h30" value={heuresMainOeuvre} onChange={e => setHeuresMainOeuvre(e.target.value)} />
+                <button onClick={ajouterMainOeuvre} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap">+ Ajouter</button>
               </div>
             )}
             {!tauxHoraire && (
-              <p className="text-xs text-amber-600 mt-2">⚠️ Renseignez votre taux horaire dans <a href="/dashboard/profil" className="underline">votre profil</a></p>
+              <p className="text-xs text-amber-600 mt-2">Renseignez votre taux horaire dans <a href="/dashboard/profil" className="underline">votre profil</a></p>
             )}
           </div>
 
-          {lignes.length > 0 && (
+          {/* Ligne libre */}
+          <div className="border-t border-gray-100 pt-4 mt-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Ligne libre</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input type="text" className="flex-1 min-w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Ex: Trajet offert, Frais deplacement..." value={ligneAutreNom} onChange={e => setLigneAutreNom(e.target.value)} />
+              <input type="number" className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Montant" value={ligneAutreMontant} onChange={e => setLigneAutreMontant(e.target.value)} />
+              <button onClick={ajouterLigneAutre} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap">+ Ajouter</button>
+            </div>
+            {lignesAutres.map((la, i) => (
+              <div key={i} className="flex items-center justify-between p-3 mt-2 rounded-lg border border-gray-200 bg-gray-50">
+                <span className="text-sm text-gray-700">{la.nom}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900">{la.montant > 0 ? la.montant.toFixed(2) + ' EUR' : 'Offert'}</span>
+                  <button onClick={() => setLignesAutres(l => l.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 text-xs px-1">X</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Remise */}
+          <div className="border-t border-gray-100 pt-4 mt-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Remise</p>
+            <div className="flex items-center gap-2">
+              <input type="number" className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="0" value={remiseValeur} onChange={e => setRemiseValeur(e.target.value)} />
+              <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" value={remiseType} onChange={e => setRemiseType(e.target.value as 'pourcent' | 'euro')}>
+                <option value="pourcent">%</option>
+                <option value="euro">EUR</option>
+              </select>
+              {remiseValeur && parseFloat(remiseValeur) > 0 && (
+                <span className="text-sm text-green-600 font-medium">
+                  - {remiseMontant.toFixed(2)} EUR HT
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Recapitulatif */}
+          {(lignes.length > 0 || lignesAutres.length > 0) && (
             <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="flex justify-between text-sm text-gray-500 mb-1"><span>Total HT</span><span>{totalHT.toFixed(2)} €</span></div>
-              <div className="flex justify-between text-sm text-gray-500 mb-1"><span>TVA {tva}%</span><span>{totalTVA.toFixed(2)} €</span></div>
-              <div className="flex justify-between font-bold text-gray-900"><span>Total TTC</span><span>{totalTTC.toFixed(2)} €</span></div>
+              {remiseMontant > 0 && (
+                <div className="flex justify-between text-sm text-green-600 mb-1">
+                  <span>Remise {remiseType === 'pourcent' ? remiseValeur + '%' : ''}</span>
+                  <span>- {remiseMontant.toFixed(2)} EUR</span>
+                </div>
+              )}
+              {lignesAutres.filter(la => la.montant > 0).map((la, i) => (
+                <div key={i} className="flex justify-between text-sm text-gray-500 mb-1">
+                  <span>{la.nom}</span>
+                  <span>{la.montant.toFixed(2)} EUR</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-sm text-gray-500 mb-1"><span>Total HT</span><span>{totalHT.toFixed(2)} EUR</span></div>
+              <div className="flex justify-between text-sm text-gray-500 mb-1"><span>TVA {tva}%</span><span>{totalTVA.toFixed(2)} EUR</span></div>
+              <div className="flex justify-between font-bold text-gray-900 text-lg"><span>Total TTC</span><span>{totalTTC.toFixed(2)} EUR</span></div>
             </div>
           )}
         </div>
 
         {/* 4. Conditions */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="font-semibold text-gray-900 mb-4">4. Conditions particulières</h2>
+          <h2 className="font-semibold text-gray-900 mb-4">4. Conditions particulieres</h2>
           <div className="space-y-4">
             <div>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={penalite} onChange={e => setPenalite(e.target.checked)} className="accent-blue-600 w-4 h-4" />
-                <span className="text-sm text-gray-700">Pénalité de retard</span>
+                <span className="text-sm text-gray-700">Penalite de retard</span>
               </label>
               {penalite && (
                 <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: 1% du montant par semaine de retard..." value={penaliteTexte} onChange={e => setPenaliteTexte(e.target.value)} />
@@ -492,10 +505,10 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
             <div>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={annulation} onChange={e => setAnnulation(e.target.checked)} className="accent-blue-600 w-4 h-4" />
-                <span className="text-sm text-gray-700">Conditions d&apos;annulation</span>
+                <span className="text-sm text-gray-700">Conditions d annulation</span>
               </label>
               {annulation && (
-                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: En cas d'annulation, l'acompte reste acquis..." value={annulationTexte} onChange={e => setAnnulationTexte(e.target.value)} />
+                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" placeholder="Ex: En cas d annulation, l acompte reste acquis..." value={annulationTexte} onChange={e => setAnnulationTexte(e.target.value)} />
               )}
             </div>
           </div>
@@ -506,9 +519,10 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
           disabled={generating}
           className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 transition"
         >
-          {generating ? '⏳ Génération en cours...' : '✨ Générer mon devis avec l\'IA →'}
+          {generating ? 'Generation en cours...' : 'Generer mon devis avec l IA'}
         </button>
       </div>
+
       <NavBar active="devis" />
     </main>
   )
