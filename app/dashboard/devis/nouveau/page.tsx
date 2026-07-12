@@ -241,7 +241,15 @@ ${user?.user_metadata?.['bic'] ? 'BIC : ' + user?.user_metadata?.['bic'] : ''}
 ${penalite && penaliteTexte ? 'PENALITE DE RETARD : ' + penaliteTexte : ''}
 ${annulation && annulationTexte ? 'CONDITIONS ANNULATION : ' + annulationTexte : ''}
 
-Genere un devis professionnel complet avec en-tete prestataire/devis, section client, tableau prestations, lignes supplementaires si presentes, remise si presente, recapitulatif financier, conditions paiement avec IBAN/BIC si fournis, et zone signature.
+Genere EXACTEMENT ce style de devis :
+- En-tete : nom prestataire en bold a gauche, "DEVIS" en grand bleu #2563eb a droite avec numero et date
+- Ligne bleue separatrice
+- Section client avec bordure gauche bleue #2563eb sur fond #f8fafc
+- Tableau prestations avec header bleu #2563eb texte blanc, lignes alternees blanc/#f8fafc
+- Recapitulatif a droite : Total HT, TVA, puis Total TTC dans un bloc bleu #2563eb texte blanc bold
+- Conditions paiement : deux encadres cote a cote (acompte et solde)
+- Zone signature en bas avec Bon pour accord a gauche et Signature prestataire a droite
+- Pied de page sobre avec infos prestataire prestataire/devis, section client, tableau prestations, lignes supplementaires si presentes, remise si presente, recapitulatif financier, conditions paiement avec IBAN/BIC si fournis, et zone signature.
 ${logoUrl ? 'Affiche le logo avec : <img src="' + logoUrl + '" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:8px;display:block" alt="Logo" />' : ''}
 
 ZONE SIGNATURE OBLIGATOIRE en bas du document (display:flex, justify-content:space-between, gap:40px, margin-top:40px) :
