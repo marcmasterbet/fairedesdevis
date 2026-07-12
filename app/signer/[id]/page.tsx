@@ -24,6 +24,7 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
   const [devis, setDevis] = useState<Devis | null>(null)
   const [loading, setLoading] = useState(true)
   const [nom, setNom] = useState('')
+  const [mentionBPA, setMentionBPA] = useState('')
   const [signing, setSigning] = useState(false)
   const [signed, setSigned] = useState(false)
   const [refused, setRefused] = useState(false)
@@ -42,7 +43,11 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
   }, [id])
 
   const handleSign = async () => {
-    if (!nom.trim()) { alert('Veuillez entrer votre nom'); return }
+    if (!mentionBPA.toLowerCase().includes('bon pour accord')) {
+      alert('Vous devez ecrire "Bon pour accord" dans le premier champ')
+      return
+    }
+    if (!nom.trim()) { alert('Veuillez entrer votre nom complet'); return }
     if (!sigCanvas.current || sigCanvas.current.isEmpty()) { alert('Veuillez dessiner votre signature'); return }
     setSigning(true)
 
@@ -54,7 +59,7 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
 
     await supabase.from('devis').update({
       statut: 'accepte',
-      signe_par: nom,
+      signe_par: mentionBPA + ' — ' + nom,
       signe_le: new Date().toISOString(),
       signature_image: signatureImage,
       signe_ip: ip
@@ -153,9 +158,37 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
       {step === 'sign' && (
         <div className="max-w-lg mx-auto px-4 py-8">
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Signer le devis</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">Signer le devis</h3>
+            <p className="text-xs text-gray-400 mb-4">Conformement a la loi, vous devez ecrire la mention "Bon pour accord" puis signer.</p>
+
+            {/* Mention Bon pour accord */}
             <div className="mb-4">
-              <label className="text-sm text-gray-600 mb-1 block">Votre nom complet</label>
+              <label className="text-sm text-gray-600 mb-1 block font-medium">
+                Mention obligatoire *
+              </label>
+              <input
+                className={'w-full border rounded-lg px-4 py-3 text-sm focus:outline-none ' + (
+                  mentionBPA.length === 0 ? 'border-gray-200 focus:border-blue-500' :
+                  mentionBPA.toLowerCase().includes('bon pour accord') ? 'border-green-400 bg-green-50' :
+                  'border-red-300 bg-red-50'
+                )}
+                placeholder='Ecrivez: Bon pour accord'
+                value={mentionBPA}
+                onChange={e => setMentionBPA(e.target.value)}
+              />
+              {mentionBPA.length > 0 && !mentionBPA.toLowerCase().includes('bon pour accord') && (
+                <p className="text-xs text-red-500 mt-1">Vous devez ecrire "Bon pour accord"</p>
+              )}
+              {mentionBPA.toLowerCase().includes('bon pour accord') && (
+                <p className="text-xs text-green-600 mt-1">Mention valide</p>
+              )}
+            </div>
+
+            {/* Nom complet */}
+            <div className="mb-4">
+              <label className="text-sm text-gray-600 mb-1 block font-medium">
+                Votre nom complet *
+              </label>
               <input
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
                 placeholder="Jean Dupont"
@@ -163,8 +196,10 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
                 onChange={e => setNom(e.target.value)}
               />
             </div>
+
+            {/* Signature */}
             <div className="mb-4">
-              <label className="text-sm text-gray-600 mb-2 block">Votre signature</label>
+              <label className="text-sm text-gray-600 mb-2 block font-medium">Votre signature *</label>
               <div className="border-2 border-dashed border-gray-200 rounded-lg overflow-hidden bg-white">
                 <SignatureCanvas
                   ref={sigCanvas}
@@ -182,18 +217,21 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
                 onClick={() => sigCanvas.current?.clear()}
                 className="text-xs text-gray-400 hover:text-gray-600 mt-1"
               >
-                Effacer
+                Effacer la signature
               </button>
             </div>
+
+            {/* Info legale */}
             <div className="bg-blue-50 rounded-lg p-3 mb-4">
               <p className="text-xs text-blue-700">
-                En signant ce devis, vous acceptez les conditions et le montant de <strong>{Number(devis.montant_ttc).toFixed(2)} EUR TTC</strong>. Cette signature a valeur legale.
+                En signant ce devis avec la mention "Bon pour accord", vous acceptez les conditions et le montant de <strong>{Number(devis.montant_ttc).toFixed(2)} EUR TTC</strong>. Cette signature electronique a valeur legale.
               </p>
             </div>
+
             <div className="flex gap-3">
               <button
                 onClick={handleSign}
-                disabled={signing}
+                disabled={signing || !mentionBPA.toLowerCase().includes('bon pour accord')}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
               >
                 {signing ? 'Signature en cours...' : 'Valider ma signature'}
