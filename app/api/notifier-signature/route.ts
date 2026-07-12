@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     if (prestaEmail) {
       await resend.emails.send({
-        from: 'FaireDesDevis <onboarding@resend.dev>',
+        from: 'FaireDesDevis <noreply@fairedesdevis.fr>',
         to: prestaEmail,
         subject: sujet,
         html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px"><div style="background:' + couleur + ';padding:24px;border-radius:12px 12px 0 0;text-align:center"><h1 style="color:white;margin:0;font-size:24px">' + titreEmail + '</h1></div><div style="background:white;padding:32px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px"><p style="font-size:16px;color:#1e293b">Votre devis <strong>' + devisData.numero + '</strong> a ete <strong>' + (estAccepte ? 'accepte' : 'refuse') + '</strong> par <strong>' + nom + '</strong>.</p>' + (estAccepte ? '<div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:8px;margin:20px 0"><p style="margin:0;color:#16a34a;font-weight:bold">Montant : ' + Number(devisData.montant_ttc).toFixed(2) + ' EUR TTC</p></div>' : '') + '<a href="https://fairedesdevis.fr/dashboard/devis/' + devisId + '" style="background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;margin-top:16px">Voir le devis</a></div></div>'
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     if (estAccepte && devisData.client_email) {
       await resend.emails.send({
-        from: 'FaireDesDevis <onboarding@resend.dev>',
+        from: 'FaireDesDevis <noreply@fairedesdevis.fr>',
         to: devisData.client_email,
         subject: 'Confirmation devis ' + devisData.numero + ' accepte',
         html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px"><div style="background:#2563eb;padding:24px;border-radius:12px 12px 0 0;text-align:center"><h1 style="color:white;margin:0;font-size:24px">FaireDesDevis</h1></div><div style="background:white;padding:32px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px"><p style="font-size:16px;color:#1e293b">Bonjour <strong>' + nom + '</strong>,</p><p style="color:#64748b">Confirmation de votre acceptation du devis <strong>' + devisData.numero + '</strong> de <strong>' + prestaNom + '</strong>.</p><div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:8px;margin:20px 0"><p style="margin:0;color:#16a34a;font-weight:bold">Devis accepte</p><p style="margin:8px 0 0;color:#64748b;font-size:13px">Montant : ' + Number(devisData.montant_ttc).toFixed(2) + ' EUR TTC</p></div><p style="color:#94a3b8;font-size:12px">Conservez cet email comme preuve.</p></div></div>'

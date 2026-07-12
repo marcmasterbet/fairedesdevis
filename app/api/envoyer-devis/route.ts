@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
   try {
     await resend.emails.send({
-      from: 'FaireDesDevis <onboarding@resend.dev>',
+      from: 'FaireDesDevis <noreply@fairedesdevis.fr>',
       to: clientEmail,
       subject: `Devis ${numero} de ${prestataireNom}`,
       html: `
