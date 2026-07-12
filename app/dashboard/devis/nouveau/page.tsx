@@ -227,8 +227,9 @@ ${lignesAutres.length > 0 ? 'LIGNES SUPPLEMENTAIRES :\n' + lignesAutres.map(la =
 ${remiseMontant > 0 ? 'REMISE : -' + remiseMontant.toFixed(2) + ' EUR HT (' + (remiseType === 'pourcent' ? remiseValeur + '%' : remiseValeur + ' EUR fixes') + ')' : ''}
 
 MONTANTS :
+IMPORTANT : Utilise EXACTEMENT ces montants sans jamais recalculer :
 Total HT brut : ${totalHTBrut.toFixed(2)} EUR
-${remiseMontant > 0 ? 'Remise : -' + remiseMontant.toFixed(2) + ' EUR' : ''}
+${remiseMontant > 0 ? 'Remise : -' + remiseMontant.toFixed(2) + ' EUR (' + (remiseType === 'pourcent' ? remiseValeur + '%' : remiseValeur + ' EUR') + ')' : ''}
 Total HT net : ${totalHT.toFixed(2)} EUR
 TVA ${tva}% : ${totalTVA.toFixed(2)} EUR
 Total TTC : ${totalTTC.toFixed(2)} EUR
