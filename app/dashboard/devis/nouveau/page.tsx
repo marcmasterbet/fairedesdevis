@@ -252,7 +252,19 @@ Genere EXACTEMENT ce style de devis :
 - Pied de page sobre avec infos prestataire prestataire/devis, section client, tableau prestations, lignes supplementaires si presentes, remise si presente, recapitulatif financier, conditions paiement avec IBAN/BIC si fournis, et zone signature.
 ${logoUrl ? 'Affiche le logo avec : <img src="' + logoUrl + '" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:8px;display:block" alt="Logo" />' : ''}
 
-ZONE SIGNATURE OBLIGATOIRE en bas du document (display:flex, justify-content:space-between, gap:40px, margin-top:40px) :
+ZONE SIGNATURE OBLIGATOIRE EN BAS DU DOCUMENT (DISPLAY:FLEX, JUSTIFY-CONTENT:SPACE-BETWEEN, GAP:40PX, MARGIN-TOP:40PX) :
+
+GAUCHE (FLEX:1, BORDER-TOP:2PX SOLID #E2E8F0, PADDING-TOP:12PX) :
+  TITRE "SIGNATURE DU CLIENT" (FONT-SIZE:13PX, FONT-WEIGHT:BOLD, COLOR:#1E293B)
+  TEXTE "EN SIGNANT ELECTRONIQUEMENT CE DEVIS, LE CLIENT DECLARE AVOIR LU ET APPROUVE L ENSEMBLE DES CONDITIONS." (FONT-SIZE:11PX, COLOR:#94A3B8, MARGIN-TOP:4PX)
+  GRANDE ZONE VIDE HEIGHT:80PX POUR SIGNATURE
+
+DROITE (FLEX:1, BORDER-TOP:2PX SOLID #E2E8F0, PADDING-TOP:12PX) :
+  TITRE "SIGNATURE DU PRESTATAIRE" (FONT-SIZE:13PX, FONT-WEIGHT:BOLD, COLOR:#1E293B)
+  NOM PRESTATAIRE (FONT-SIZE:12PX, COLOR:#64748B, MARGIN-TOP:4PX)
+  ${signatureProUrl ? '<IMG SRC="' + signatureProUrl + '" STYLE="MAX-HEIGHT:70PX;OBJECT-FIT:CONTAIN;DISPLAY:BLOCK;MARGIN-TOP:8PX" ALT="SIGNATURE" />' : 'LIGNE VIDE HEIGHT:60PX'}
+
+GENERE UNIQUEMENT LE HTML. RIEN AVANT, RIEN APRES. en bas du document (display:flex, justify-content:space-between, gap:40px, margin-top:40px) :
 GAUCHE (flex:1, border-top:2px solid #e2e8f0, padding-top:12px) : 
   titre "Bon pour accord" (font-size:13px, font-weight:bold, color:#1e293b)
   texte "Lu et approuve - Signature du client precedee de la mention manuscrite Bon pour accord" (font-size:11px, color:#94a3b8, margin-top:4px)
