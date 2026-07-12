@@ -58,6 +58,10 @@ export default function Dashboard() {
     setDevis(d => d.map(dv => dv.id === id ? { ...dv, archive: false } : dv))
   }
 
+  const scrollToListe = () => {
+    document.getElementById('liste-devis')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   if (loading) return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
       <p className="text-gray-400">Chargement...</p>
@@ -73,7 +77,7 @@ export default function Dashboard() {
     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
   })
   const devisAcceptes = devis.filter(d => d.statut === 'accepte' && !d.archive)
-  const devisEnAttente = devis.filter(d => (d.statut === 'envoye' || d.statut === 'brouillon') && !d.archive)
+  const devisEnAttente = devis.filter(d => d.statut === 'envoye' && !d.archive)
   const montantTotal = devisAcceptes.reduce((s, d) => s + Number(d.montant_ttc), 0)
 
   const onglets = [
@@ -111,20 +115,26 @@ export default function Dashboard() {
           <p className="text-gray-500 text-sm mt-1">{metier}</p>
         </div>
 
-        {/* Stats */}
+        {/* Stats cliquables */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-2xl font-bold text-gray-900">{devisCeMois.length}</p>
             <p className="text-xs text-gray-500 mt-1">Devis ce mois</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <button
+            onClick={() => { setOnglet('accepte'); scrollToListe() }}
+            className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-green-300 hover:bg-green-50 transition cursor-pointer"
+          >
             <p className="text-2xl font-bold text-green-600">{devisAcceptes.length}</p>
             <p className="text-xs text-gray-500 mt-1">Acceptes</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          </button>
+          <button
+            onClick={() => { setOnglet('envoye'); scrollToListe() }}
+            className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-blue-300 hover:bg-blue-50 transition cursor-pointer"
+          >
             <p className="text-2xl font-bold text-blue-600">{devisEnAttente.length}</p>
             <p className="text-xs text-gray-500 mt-1">En attente</p>
-          </div>
+          </button>
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-2xl font-bold text-gray-900">{montantTotal.toFixed(0)} EUR</p>
             <p className="text-xs text-gray-500 mt-1">Montant accepte</p>
@@ -152,8 +162,8 @@ export default function Dashboard() {
           </a>
         </div>
 
-        {/* Devis par onglets */}
-        <div className="bg-white rounded-xl border border-gray-200">
+        {/* Liste devis avec onglets */}
+        <div id="liste-devis" className="bg-white rounded-xl border border-gray-200">
           <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-gray-100">
             <h2 className="font-semibold text-gray-900">Mes devis ({devis.filter(d => !d.archive).length})</h2>
             <a href="/dashboard/devis/nouveau" className="text-sm text-blue-600 hover:underline">+ Nouveau</a>
@@ -167,12 +177,17 @@ export default function Dashboard() {
                 onClick={() => setOnglet(o.id)}
                 className={'px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ' + (onglet === o.id ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100')}
               >
-                {o.label} {o.count > 0 && <span className={'ml-1 px-1.5 py-0.5 rounded-full text-xs ' + (onglet === o.id ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600')}>{o.count}</span>}
+                {o.label}
+                {o.count > 0 && (
+                  <span className={'ml-1 px-1.5 py-0.5 rounded-full text-xs ' + (onglet === o.id ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600')}>
+                    {o.count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
 
-          {/* Liste devis */}
+          {/* Liste */}
           <div className="p-4">
             {devisFiltres.length === 0 ? (
               <div className="text-center py-12">
