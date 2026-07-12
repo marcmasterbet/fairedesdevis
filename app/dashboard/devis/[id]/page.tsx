@@ -72,16 +72,9 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
   }
 
   const handleSupprimer = async () => {
-    if (!confirm('Supprimer ce devis definitivement ?')) return
+    if (!confirm('Supprimer ce devis ?')) return
     await supabase.from('devis').delete().eq('id', id)
     router.push('/dashboard/devis')
-  }
-
-  const getStatutColor = (s: string) => {
-    if (s === 'accepte') return 'bg-green-100 text-green-700'
-    if (s === 'refuse') return 'bg-red-100 text-red-700'
-    if (s === 'envoye') return 'bg-blue-100 text-blue-700'
-    return 'bg-gray-100 text-gray-600'
   }
 
   if (loading) return (
@@ -96,35 +89,23 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
     </main>
   )
 
-  return (
-    <div style={{ backgroundColor: '#f1f5f9', minHeight: '100vh' }}>
+  const statutColor = devis.statut === 'accepte' ? 'bg-green-100 text-green-700' : devis.statut === 'refuse' ? 'bg-red-100 text-red-700' : devis.statut === 'envoye' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
 
+  return (
+    <div style={{backgroundColor:'#f1f5f9',minHeight:'100vh'}}>
       <div className="print:hidden bg-white border-b px-4 py-3 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto flex flex-wrap justify-between items-center gap-2">
-          <a href="/dashboard/devis" className="text-sm text-gray-500 hover:text-gray-700">← Mes devis</a>
+          <a href="/dashboard/devis" className="text-sm text-gray-500 hover:text-gray-700">Mes devis</a>
           <div className="flex flex-wrap gap-2 items-center">
-            <span className={'px-3 py-1 rounded-full text-xs font-medium ' + getStatutColor(devis.statut)}>
-              {devis.statut}
-            </span>
-            <a href={'/dashboard/devis/' + id + '/modifier'} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">
-              Modifier
-            </a>
-            <button onClick={handleSauvegarder} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">
-              Sauvegarder
-            </button>
-            <button onClick={handleEnvoyer} disabled={sending} className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
-              {sending ? 'Envoi...' : sent ? 'Envoye' : 'Envoyer'}
-            </button>
-            <button onClick={() => window.print()} className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800">
-              PDF
-            </button>
-            <button onClick={handleSupprimer} className="text-red-400 hover:text-red-600 px-3 py-2 text-sm font-semibold">
-              Supprimer
-            </button>
+            <span className={'px-3 py-1 rounded-full text-xs font-medium ' + statutColor}>{devis.statut}</span>
+            <a href={'/dashboard/devis/' + id + '/modifier'} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">Modifier</a>
+            <button onClick={handleSauvegarder} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">Sauvegarder</button>
+            <button onClick={handleEnvoyer} disabled={sending} className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">{sending ? 'Envoi...' : sent ? 'Envoye' : 'Envoyer au client'}</button>
+            <button onClick={() => window.print()} className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800">PDF</button>
+            <button onClick={handleSupprimer} className="text-red-400 hover:text-red-600 px-3 py-2 text-sm font-semibold">Supprimer</button>
           </div>
         </div>
       </div>
-
       {sent && (
         <div className="max-w-3xl mx-auto mt-4 px-4 print:hidden">
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
@@ -132,20 +113,17 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
           </div>
         </div>
       )}
-
-      {(devis.statut === 'accepte') && devis.signe_par && (
+      {devis.statut === 'accepte' && devis.signe_par && (
         <div className="max-w-3xl mx-auto mt-4 px-4 print:hidden">
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
             Accepte par {devis.signe_par}
           </div>
         </div>
       )}
-
       <div className="max-w-3xl mx-auto my-6 bg-white shadow-sm rounded-xl overflow-hidden print:shadow-none print:my-0 print:max-w-none">
-        <div style={{ padding: '48px' }} dangerouslySetInnerHTML={{ __html: devis.contenu }} />
+        <div style={{padding:'48px'}} dangerouslySetInnerHTML={{__html:devis.contenu}} />
       </div>
-
-      <div style={{ height: '80px' }} className="print:hidden" />
+      <div style={{height:'80px'}} className="print:hidden" />
       <NavBar active="devis" />
     </div>
   )
