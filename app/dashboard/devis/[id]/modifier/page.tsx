@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { use } from 'react'
 import { supabase } from '../../../../../lib/supabase'
 import { useRouter } from 'next/navigation'
+import NavBar from '../../../../components/NavBar'
+import Header from '../../../../components/Header'
 
 interface Devis {
   id: string
@@ -112,7 +114,7 @@ export default function ModifierDevis({ params }: { params: Promise<{ id: string
           prix_ht: l.prix_ht,
           total_ht: l.total_ht,
           unite: l.unite || 'unite',
-          type: l.nom.includes("Main d") ? 'main_oeuvre' : 'produit'
+          type: l.nom.includes('Main') ? 'main_oeuvre' : 'produit'
         })))
       }
 
@@ -161,7 +163,7 @@ export default function ModifierDevis({ params }: { params: Promise<{ id: string
     const dureeLabel = m > 0 ? h + 'h' + m.toString().padStart(2, '0') : h + 'h'
     setLignes(l => [...l.filter(li => li.type !== 'main_oeuvre'), {
       produit_id: 'main_oeuvre',
-      nom: "Main d oeuvre (" + dureeLabel + ")",
+      nom: 'Main d oeuvre (' + dureeLabel + ')',
       reference: '',
       quantite: heures,
       prix_ht: tauxHoraire,
@@ -314,36 +316,22 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
-        <a href="/dashboard" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
-        <a href={'/dashboard/devis/' + id} className="text-sm text-gray-400 hover:text-gray-600">Annuler</a>
-      </header>
+      <Header back={'/dashboard/devis/' + id} backLabel="← Retour au devis" />
 
       <div className="max-w-3xl mx-auto px-6 py-8 pb-24">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Modifier le devis {devis?.numero}</h1>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h2 className="font-semibold text-gray-900 mb-4">1. Client</h2>
-          <select
-            className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-            value={clientId}
-            onChange={e => setClientId(e.target.value)}
-          >
+          <select className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500" value={clientId} onChange={e => setClientId(e.target.value)}>
             <option value="">Selectionner un client...</option>
-            {clients.map(c => (
-              <option key={c.id} value={c.id}>{c.nom} - {c.email}</option>
-            ))}
+            {clients.map(c => <option key={c.id} value={c.id}>{c.nom} - {c.email}</option>)}
           </select>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h2 className="font-semibold text-gray-900 mb-4">2. Description</h2>
-          <textarea
-            className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 h-24 resize-none"
-            placeholder="Description du chantier..."
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-          />
+          <textarea className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 h-24 resize-none" placeholder="Description du chantier..." value={description} onChange={e => setDescription(e.target.value)} />
           <div className="grid grid-cols-2 gap-4 mt-3">
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Date de debut</label>
@@ -359,20 +347,11 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
           <h2 className="font-semibold text-gray-900 mb-4">3. Produits</h2>
           <div className="relative mb-4">
-            <input
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-              placeholder="Rechercher un produit..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+            <input className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500" placeholder="Rechercher un produit..." value={search} onChange={e => setSearch(e.target.value)} />
             {resultats.length > 0 && (
               <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 overflow-y-auto">
                 {resultats.map(produit => (
-                  <div
-                    key={produit.id}
-                    onClick={() => ajouterProduit(produit)}
-                    className="flex items-center justify-between px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                  >
+                  <div key={produit.id} onClick={() => ajouterProduit(produit)} className="flex items-center justify-between px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{produit.nom}</p>
                       <p className="text-xs text-gray-400">{produit.categorie}{produit.reference ? ' - ' + produit.reference : ''}</p>
@@ -393,21 +372,10 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
                     {ligne.reference && <p className="text-xs text-gray-400">{ligne.reference}</p>}
                   </div>
                   <input
-                    type="number"
-                    min="1"
-                    inputMode="numeric"
+                    type="number" min="1" inputMode="numeric"
                     value={ligne.quantite === 0 ? '' : ligne.quantite}
-                    onChange={e => {
-                      const val = e.target.value
-                      if (val === '') updateQuantite(ligne.produit_id, 0)
-                      else {
-                        const num = parseInt(val)
-                        if (!isNaN(num)) updateQuantite(ligne.produit_id, num)
-                      }
-                    }}
-                    onBlur={e => {
-                      if (e.target.value === '' || parseInt(e.target.value) < 1) updateQuantite(ligne.produit_id, 1)
-                    }}
+                    onChange={e => { const val = e.target.value; if (val === '') updateQuantite(ligne.produit_id, 0); else { const num = parseInt(val); if (!isNaN(num)) updateQuantite(ligne.produit_id, num) } }}
+                    onBlur={e => { if (e.target.value === '' || parseInt(e.target.value) < 1) updateQuantite(ligne.produit_id, 1) }}
                     className="w-16 border border-blue-300 rounded px-2 py-1 text-sm text-center bg-white"
                   />
                   <span className="text-sm font-semibold text-gray-900 w-20 text-right">{ligne.total_ht.toFixed(2)} EUR</span>
@@ -430,17 +398,8 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="Heures ex: 1.5 pour 1h30"
-                  value={heuresMainOeuvre}
-                  onChange={e => setHeuresMainOeuvre(e.target.value)}
-                />
-                <button onClick={ajouterMainOeuvre} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap">
-                  + Ajouter
-                </button>
+                <input type="text" inputMode="decimal" className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Heures ex: 1.5 pour 1h30" value={heuresMainOeuvre} onChange={e => setHeuresMainOeuvre(e.target.value)} />
+                <button onClick={ajouterMainOeuvre} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 whitespace-nowrap">+ Ajouter</button>
               </div>
             )}
           </div>
@@ -462,30 +421,24 @@ Genere UNIQUEMENT le HTML. Rien avant, rien apres.`
                 <input type="checkbox" checked={penalite} onChange={e => setPenalite(e.target.checked)} className="accent-blue-600 w-4 h-4" />
                 <span className="text-sm text-gray-700">Penalite de retard</span>
               </label>
-              {penalite && (
-                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" value={penaliteTexte} onChange={e => setPenaliteTexte(e.target.value)} />
-              )}
+              {penalite && <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" value={penaliteTexte} onChange={e => setPenaliteTexte(e.target.value)} />}
             </div>
             <div>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={annulation} onChange={e => setAnnulation(e.target.checked)} className="accent-blue-600 w-4 h-4" />
                 <span className="text-sm text-gray-700">Conditions annulation</span>
               </label>
-              {annulation && (
-                <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" value={annulationTexte} onChange={e => setAnnulationTexte(e.target.value)} />
-              )}
+              {annulation && <textarea className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-16 resize-none" value={annulationTexte} onChange={e => setAnnulationTexte(e.target.value)} />}
             </div>
           </div>
         </div>
 
-        <button
-          onClick={handleGenerer}
-          disabled={generating}
-          className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 transition"
-        >
+        <button onClick={handleGenerer} disabled={generating} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 transition">
           {generating ? 'Generation en cours...' : 'Regenerer le devis avec mes modifications'}
         </button>
       </div>
+
+      <NavBar active="devis" />
     </main>
   )
 }

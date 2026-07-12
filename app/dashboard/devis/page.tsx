@@ -1,7 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { supabase } from '../../../lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import NavBar from '../../components/NavBar'
+import Header from '../../components/Header'
 
 interface Devis {
   id: string
@@ -24,7 +26,7 @@ const STATUTS = [
 
 const PAGE_SIZE = 20
 
-export default function MesDevis() {
+function MesDevisContent() {
   const [devis, setDevis] = useState<Devis[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -32,6 +34,12 @@ export default function MesDevis() {
   const [tri, setTri] = useState('date')
   const [page, setPage] = useState(1)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const statut = searchParams.get('statut')
+    if (statut) setFiltre(statut)
+  }, [searchParams])
 
   useEffect(() => {
     const init = async () => {
@@ -64,14 +72,15 @@ export default function MesDevis() {
     return 'bg-gray-100 text-gray-600'
   }
 
-  // Filtrage
+  const setFiltreReset = (f: string) => { setFiltre(f); setPage(1) }
+  const setSearchReset = (s: string) => { setSearch(s); setPage(1) }
+
   let filtered = devis.filter(d => {
     if (filtre === 'tous') return !d.archive
     if (filtre === 'archive') return d.archive
     return d.statut === filtre && !d.archive
   })
 
-  // Recherche
   if (search) {
     filtered = filtered.filter(d =>
       d.numero.toLowerCase().includes(search.toLowerCase()) ||
@@ -79,20 +88,14 @@ export default function MesDevis() {
     )
   }
 
-  // Tri
   filtered = [...filtered].sort((a, b) => {
     if (tri === 'montant') return Number(b.montant_ttc) - Number(a.montant_ttc)
     if (tri === 'client') return (a.client_nom || '').localeCompare(b.client_nom || '')
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   })
 
-  // Pagination
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  // Reset page si filtre change
-  const setFiltreReset = (f: string) => { setFiltre(f); setPage(1) }
-  const setSearchReset = (s: string) => { setSearch(s); setPage(1) }
 
   if (loading) return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -102,12 +105,15 @@ export default function MesDevis() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-        <span className="text-blue-600 font-bold text-xl">FaireDesDevis</span>
-        <a href="/dashboard/devis/nouveau" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
-          + Nouveau devis
-        </a>
-      </header>
+      <Header
+        back="/dashboard"
+        backLabel="← Dashboard"
+        action={
+          <a href="/dashboard/devis/nouveau" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
+            + Nouveau
+          </a>
+        }
+      />
 
       <div className="max-w-3xl mx-auto px-4 py-6 pb-24">
         <div className="flex justify-between items-center mb-4">
@@ -115,7 +121,6 @@ export default function MesDevis() {
           <p className="text-sm text-gray-400">{filtered.length} devis</p>
         </div>
 
-        {/* Recherche */}
         <input
           className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 mb-4"
           placeholder="Rechercher par numero, client..."
@@ -123,7 +128,6 @@ export default function MesDevis() {
           onChange={e => setSearchReset(e.target.value)}
         />
 
-        {/* Filtres */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
           {STATUTS.map(s => (
             <button
@@ -141,21 +145,19 @@ export default function MesDevis() {
           ))}
         </div>
 
-        {/* Tri */}
         <div className="flex gap-2 mb-4 items-center">
-          <span className="text-xs text-gray-400">Trier par :</span>
+          <span className="text-xs text-gray-400">Trier :</span>
           {[{ id: 'date', label: 'Date' }, { id: 'montant', label: 'Montant' }, { id: 'client', label: 'Client' }].map(t => (
             <button
               key={t.id}
               onClick={() => setTri(t.id)}
-              className={'px-3 py-1 rounded-lg text-xs font-medium transition ' + (tri === t.id ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300')}
+              className={'px-3 py-1 rounded-lg text-xs font-medium transition ' + (tri === t.id ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600')}
             >
               {t.label}
             </button>
           ))}
         </div>
 
-        {/* Liste */}
         {paginated.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <p className="text-4xl mb-3">📄</p>
@@ -182,18 +184,10 @@ export default function MesDevis() {
                   <span className={'px-2 py-1 rounded-full text-xs font-medium ' + getStatutStyle(d.statut)}>
                     {d.statut}
                   </span>
-                  <button
-                    onClick={e => handleArchiver(e, d.id, d.archive)}
-                    className="text-gray-400 hover:text-gray-600 px-1"
-                    title={d.archive ? 'Desarchiver' : 'Archiver'}
-                  >
+                  <button onClick={e => handleArchiver(e, d.id, d.archive)} className="text-gray-400 hover:text-gray-600 px-1" title={d.archive ? 'Desarchiver' : 'Archiver'}>
                     {d.archive ? '📤' : '📁'}
                   </button>
-                  <button
-                    onClick={e => handleSupprimer(e, d.id)}
-                    className="text-red-400 hover:text-red-600 px-1"
-                    title="Supprimer"
-                  >
+                  <button onClick={e => handleSupprimer(e, d.id)} className="text-red-400 hover:text-red-600 px-1" title="Supprimer">
                     ✕
                   </button>
                 </div>
@@ -202,36 +196,28 @@ export default function MesDevis() {
           </div>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-6">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-3 py-2 rounded-lg border border-gray-200 text-sm disabled:opacity-40 hover:border-blue-300"
-            >
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-2 rounded-lg border border-gray-200 text-sm disabled:opacity-40">
               Precedent
             </button>
             <span className="text-sm text-gray-500">Page {page} sur {totalPages}</span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-3 py-2 rounded-lg border border-gray-200 text-sm disabled:opacity-40 hover:border-blue-300"
-            >
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-2 rounded-lg border border-gray-200 text-sm disabled:opacity-40">
               Suivant
             </button>
           </div>
         )}
       </div>
 
-      {/* Navigation mobile */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden flex justify-around py-3 px-4">
-        <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">🏠</span><span className="text-xs">Accueil</span></a>
-        <a href="/dashboard/devis" className="flex flex-col items-center gap-1 text-blue-600"><span className="text-xl">📄</span><span className="text-xs">Devis</span></a>
-        <a href="/dashboard/clients" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">👥</span><span className="text-xs">Clients</span></a>
-        <a href="/dashboard/catalogue" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">📦</span><span className="text-xs">Catalogue</span></a>
-        <a href="/dashboard/profil" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">⚙️</span><span className="text-xs">Profil</span></a>
-      </div>
+      <NavBar active="devis" />
     </main>
+  )
+}
+
+export default function MesDevis() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400">Chargement...</p></main>}>
+      <MesDevisContent />
+    </Suspense>
   )
 }

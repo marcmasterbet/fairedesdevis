@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { use } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import { useRouter } from 'next/navigation'
+import NavBar from '../../../components/NavBar'
 
 interface Devis {
   id: string
@@ -37,7 +38,7 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
 
   const handleEnvoyer = async () => {
     if (!devis) return
-    if (!devis.client_email) { alert('Pas email'); return }
+    if (!devis.client_email) { alert('Pas email client'); return }
     setSending(true)
     const { data: { user } } = await supabase.auth.getUser()
     const lien = 'https://fairedesdevis.fr/signer/' + id
@@ -70,42 +71,82 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
     alert('Sauvegarde OK')
   }
 
-  if (loading) return <main className="min-h-screen bg-gray-100 flex items-center justify-center"><p className="text-gray-400">Chargement...</p></main>
-  if (!devis) return <main className="min-h-screen bg-gray-100 flex items-center justify-center"><p className="text-gray-400">Introuvable</p></main>
+  const handleSupprimer = async () => {
+    if (!confirm('Supprimer ce devis definitivement ?')) return
+    await supabase.from('devis').delete().eq('id', id)
+    router.push('/dashboard/devis')
+  }
+
+  const getStatutColor = (s: string) => {
+    if (s === 'accepte') return 'bg-green-100 text-green-700'
+    if (s === 'refuse') return 'bg-red-100 text-red-700'
+    if (s === 'envoye') return 'bg-blue-100 text-blue-700'
+    return 'bg-gray-100 text-gray-600'
+  }
+
+  if (loading) return (
+    <main className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <p className="text-gray-400">Chargement...</p>
+    </main>
+  )
+
+  if (!devis) return (
+    <main className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <p className="text-gray-400">Devis introuvable</p>
+    </main>
+  )
 
   return (
-    <div style={{backgroundColor:'#f1f5f9',minHeight:'100vh'}}>
-      <div className="print:hidden bg-white border-b px-4 py-3">
-        <div className="max-w-3xl mx-auto flex flex-wrap justify-between items-center gap-3">
-          <a href="/dashboard" className="text-sm text-gray-500">Dashboard</a>
+    <div style={{ backgroundColor: '#f1f5f9', minHeight: '100vh' }}>
+
+      <div className="print:hidden bg-white border-b px-4 py-3 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto flex flex-wrap justify-between items-center gap-2">
+          <a href="/dashboard/devis" className="text-sm text-gray-500 hover:text-gray-700">← Mes devis</a>
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-600">{devis.statut}</span>
-            <a href={'/dashboard/devis/' + id + '/modifier'} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold">Modifier</a>
-            <button onClick={handleSauvegarder} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold">Sauvegarder</button>
-            <button onClick={handleEnvoyer} disabled={sending} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">{sending ? 'Envoi...' : sent ? 'Envoye' : 'Envoyer'}</button>
-            <button onClick={() => window.print()} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">PDF</button>
+            <span className={'px-3 py-1 rounded-full text-xs font-medium ' + getStatutColor(devis.statut)}>
+              {devis.statut}
+            </span>
+            <a href={'/dashboard/devis/' + id + '/modifier'} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">
+              Modifier
+            </a>
+            <button onClick={handleSauvegarder} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">
+              Sauvegarder
+            </button>
+            <button onClick={handleEnvoyer} disabled={sending} className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+              {sending ? 'Envoi...' : sent ? 'Envoye' : 'Envoyer'}
+            </button>
+            <button onClick={() => window.print()} className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800">
+              PDF
+            </button>
+            <button onClick={handleSupprimer} className="text-red-400 hover:text-red-600 px-3 py-2 text-sm font-semibold">
+              Supprimer
+            </button>
           </div>
         </div>
       </div>
-      {sent && <div className="max-w-3xl mx-auto mt-4 px-4"><div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">Envoye a {devis.client_email}</div></div>}
-      <div className="max-w-3xl mx-auto my-6 bg-white shadow-sm rounded-xl overflow-hidden">
-        <div style={{padding:'48px'}} dangerouslySetInnerHTML={{__html:devis.contenu}} />
-      </div>
-      {(devis.statut === 'accepte' || devis.statut === 'accepté') && devis.signe_par && (
-        <div className="max-w-3xl mx-auto mt-4 px-4">
+
+      {sent && (
+        <div className="max-w-3xl mx-auto mt-4 px-4 print:hidden">
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-            Devis accepte par {devis.signe_par}
+            Envoye a {devis.client_email}
           </div>
         </div>
       )}
-      <div style={{height:'80px'}} />
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden flex justify-around py-3 px-4">
-        <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">🏠</span><span className="text-xs">Accueil</span></a>
-        <a href="/dashboard/devis/nouveau" className="flex flex-col items-center gap-1 text-blue-600"><span className="text-xl">✏️</span><span className="text-xs">Devis</span></a>
-        <a href="/dashboard/clients" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">👥</span><span className="text-xs">Clients</span></a>
-        <a href="/dashboard/catalogue" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">📦</span><span className="text-xs">Catalogue</span></a>
-        <a href="/dashboard/profil" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">⚙️</span><span className="text-xs">Profil</span></a>
+
+      {(devis.statut === 'accepte') && devis.signe_par && (
+        <div className="max-w-3xl mx-auto mt-4 px-4 print:hidden">
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+            Accepte par {devis.signe_par}
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-3xl mx-auto my-6 bg-white shadow-sm rounded-xl overflow-hidden print:shadow-none print:my-0 print:max-w-none">
+        <div style={{ padding: '48px' }} dangerouslySetInnerHTML={{ __html: devis.contenu }} />
       </div>
+
+      <div style={{ height: '80px' }} className="print:hidden" />
+      <NavBar active="devis" />
     </div>
   )
 }

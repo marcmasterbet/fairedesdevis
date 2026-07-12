@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { useRouter } from 'next/navigation'
+import NavBar from '../../components/NavBar'
+import Header from '../../components/Header'
 
 interface Produit {
   id: string
@@ -19,14 +21,14 @@ export default function Catalogue() {
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
-  const [form, setForm] = useState({ nom: '', reference: '', categorie: '', prix_ht: '', unite: 'unité' })
+  const [form, setForm] = useState({ nom: '', reference: '', categorie: '', prix_ht: '', unite: 'unite' })
   const router = useRouter()
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      const { data } = await supabase.from('produits').select('*').order('categorie')
+      const { data } = await supabase.from('catalogue').select('*').order('categorie')
       setProduits(data || [])
       setLoading(false)
     }
@@ -37,20 +39,20 @@ export default function Catalogue() {
     if (!form.nom || !form.prix_ht) { alert('Nom et prix obligatoires'); return }
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    const { data } = await supabase.from('produits').insert({
+    const { data } = await supabase.from('catalogue').insert({
       ...form,
       prix_ht: parseFloat(form.prix_ht),
       user_id: user?.id
     }).select()
-    if (data) setProduits(p => [...p, data[0]].sort((a,b) => a.categorie.localeCompare(b.categorie)))
-    setForm({ nom: '', reference: '', categorie: '', prix_ht: '', unite: 'unité' })
+    if (data) setProduits(p => [...p, data[0]].sort((a, b) => (a.categorie || '').localeCompare(b.categorie || '')))
+    setForm({ nom: '', reference: '', categorie: '', prix_ht: '', unite: 'unite' })
     setShowForm(false)
     setSaving(false)
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer ce produit ?')) return
-    await supabase.from('produits').delete().eq('id', id)
+    await supabase.from('catalogue').delete().eq('id', id)
     setProduits(p => p.filter(pr => pr.id !== id))
   }
 
@@ -72,23 +74,24 @@ export default function Catalogue() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
-        <a href="/dashboard" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
-        <a href="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">← Dashboard</a>
-      </header>
+      <Header
+        back="/dashboard"
+        backLabel="← Dashboard"
+        action={
+          <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
+            + Ajouter
+          </button>
+        }
+      />
 
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8 pb-24">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Mon catalogue</h1>
             <p className="text-gray-500 text-sm mt-1">{produits.length} produit{produits.length > 1 ? 's' : ''}</p>
           </div>
-          <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
-            + Ajouter
-          </button>
         </div>
 
-        {/* Formulaire */}
         {showForm && (
           <div className="bg-white rounded-xl border border-blue-200 p-6 mb-6">
             <h2 className="font-semibold text-gray-900 mb-4">Nouveau produit / prestation</h2>
@@ -99,28 +102,28 @@ export default function Catalogue() {
                   <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" value={form.nom} onChange={e => set('nom', e.target.value)} placeholder="Pompe Samsung Eco 1.5cv" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Référence</label>
+                  <label className="text-xs text-gray-500 mb-1 block">Reference</label>
                   <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" value={form.reference} onChange={e => set('reference', e.target.value)} placeholder="SAM-PUMP-15" />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Catégorie</label>
+                  <label className="text-xs text-gray-500 mb-1 block">Categorie</label>
                   <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" value={form.categorie} onChange={e => set('categorie', e.target.value)} placeholder="Filtration" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Prix HT (€) *</label>
+                  <label className="text-xs text-gray-500 mb-1 block">Prix HT (EUR) *</label>
                   <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" value={form.prix_ht} onChange={e => set('prix_ht', e.target.value)} placeholder="380" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Unité</label>
+                  <label className="text-xs text-gray-500 mb-1 block">Unite</label>
                   <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" value={form.unite} onChange={e => set('unite', e.target.value)}>
-                    <option>unité</option>
-                    <option>forfait</option>
-                    <option>heure</option>
-                    <option>jour</option>
-                    <option>m²</option>
-                    <option>ml</option>
+                    <option value="unite">unite</option>
+                    <option value="forfait">forfait</option>
+                    <option value="heure">heure</option>
+                    <option value="jour">jour</option>
+                    <option value="m2">m2</option>
+                    <option value="ml">ml</option>
                   </select>
                 </div>
               </div>
@@ -134,18 +137,21 @@ export default function Catalogue() {
           </div>
         )}
 
-        {/* Recherche */}
         {produits.length > 0 && (
-          <input className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 mb-4" placeholder="Rechercher un produit..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input
+            className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 mb-4"
+            placeholder="Rechercher un produit..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         )}
 
-        {/* Liste par catégorie */}
         {filtered.length === 0 && !showForm ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <p className="text-4xl mb-3">📦</p>
             <p className="text-gray-500 text-sm">Aucun produit dans votre catalogue</p>
             <button onClick={() => setShowForm(true)} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-blue-700">
-              Ajouter mon premier produit →
+              Ajouter mon premier produit
             </button>
           </div>
         ) : (
@@ -163,7 +169,7 @@ export default function Catalogue() {
                         {produit.reference && <p className="text-xs text-gray-400">{produit.reference}</p>}
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="font-semibold text-gray-900 text-sm">{produit.prix_ht} € <span className="text-gray-400 font-normal">/ {produit.unite}</span></span>
+                        <span className="font-semibold text-gray-900 text-sm">{produit.prix_ht} EUR <span className="text-gray-400 font-normal">/ {produit.unite}</span></span>
                         <button onClick={() => handleDelete(produit.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
                       </div>
                     </div>
@@ -174,6 +180,8 @@ export default function Catalogue() {
           </div>
         )}
       </div>
+
+      <NavBar active="catalogue" />
     </main>
   )
 }

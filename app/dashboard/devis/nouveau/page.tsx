@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../../lib/supabase'
+import NavBar from '../../../components/NavBar'
+import Header from '../../../components/Header'
 import { useRouter } from 'next/navigation'
 
 interface Client {
@@ -317,10 +319,7 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
-        <a href="/dashboard" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
-        <a href="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">← Dashboard</a>
-      </header>
+      <Header back="/dashboard/devis" backLabel="← Mes devis" />
 
       <div className="max-w-3xl mx-auto px-6 py-8 pb-24">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Nouveau devis</h1>
@@ -510,14 +509,7 @@ Génère UNIQUEMENT le HTML. Rien avant, rien après.`
           {generating ? '⏳ Génération en cours...' : '✨ Générer mon devis avec l\'IA →'}
         </button>
       </div>
-
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden flex justify-around py-3 px-4">
-        <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">🏠</span><span className="text-xs">Accueil</span></a>
-        <a href="/dashboard/devis/nouveau" className="flex flex-col items-center gap-1 text-blue-600"><span className="text-xl">✏️</span><span className="text-xs">Devis</span></a>
-        <a href="/dashboard/clients" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">👥</span><span className="text-xs">Clients</span></a>
-        <a href="/dashboard/catalogue" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">📦</span><span className="text-xs">Catalogue</span></a>
-        <a href="/dashboard/profil" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-xl">⚙️</span><span className="text-xs">Profil</span></a>
-      </div>
+      <NavBar active="devis" />
     </main>
   )
 }
