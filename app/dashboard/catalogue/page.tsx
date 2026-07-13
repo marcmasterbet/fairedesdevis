@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { useRouter } from 'next/navigation'
 import NavBar from '../../components/NavBar'
@@ -15,6 +15,14 @@ interface Produit {
   created_at: string
 }
 
+interface ProduitImporte {
+  nom: string
+  reference: string
+  categorie: string
+  prix_ht: number
+  unite: string
+}
+
 export default function Catalogue() {
   const [produits, setProduits] = useState<Produit[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,6 +30,11 @@ export default function Catalogue() {
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
   const [form, setForm] = useState({ nom: '', reference: '', categorie: '', prix_ht: '', unite: 'unite' })
+  const [showImport, setShowImport] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [produitsImportes, setProduitsImportes] = useState<ProduitImporte[]>([])
+  const [importEtape, setImportEtape] = useState<'upload' | 'apercu'>('upload')
+  const fileRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -56,6 +69,120 @@ export default function Catalogue() {
     setProduits(p => p.filter(pr => pr.id !== id))
   }
 
+  const handleImportFichier = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.csv') && !file.name.endsWith('.txt')) {
+      alert('Seuls les fichiers CSV et TXT sont acceptes. Exportez votre Excel en CSV depuis Excel.')
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Fichier trop volumineux (max 2Mo)')
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
+
+    setImporting(true)
+
+    const reader = new FileReader()
+    reader.onload = async (ev) => {
+      const contenu = ev.target?.result as string
+
+      if (!contenu || contenu.trim().length < 5) {
+        alert('Le fichier semble vide')
+        setImporting(false)
+        return
+      }
+
+      try {
+        const response = await fetch('/api/generer-devis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: `Analyse ce fichier catalogue et extrais tous les produits/prestations.
+Reponds UNIQUEMENT avec un tableau JSON valide, sans markdown, sans backticks, sans texte avant ou apres.
+Format exact : [{"nom":"...","reference":"...","categorie":"...","prix_ht":0,"unite":"unite"}]
+Regles :
+- unite doit etre l un de : unite, forfait, heure, jour, m2, ml
+- Si reference manque : reference=""
+- Si categorie manque : categorie="Autre"
+- Si unite manque : unite="unite"
+- prix_ht doit etre un nombre decimal positif
+- Ignore les lignes vides, titres, totaux
+- Ne jamais inventer de produits absents du fichier
+
+Contenu du fichier :
+${contenu.slice(0, 8000)}`
+          })
+        })
+
+        const data = await response.json()
+        const texte = data.contenu.trim()
+        const texteNettoye = texte.replace(/```json|```/g, '').trim()
+
+        let produitsParsed: ProduitImporte[]
+        try {
+          produitsParsed = JSON.parse(texteNettoye)
+        } catch {
+          alert('L IA n a pas pu analyser ce fichier. Verifiez que le format est correct.')
+          setImporting(false)
+          return
+        }
+
+        const produitsValides = produitsParsed.filter(p =>
+          p.nom && p.nom.trim().length > 0 &&
+          typeof p.prix_ht === 'number' && p.prix_ht >= 0
+        )
+
+        if (produitsValides.length === 0) {
+          alert('Aucun produit valide detecte. Verifiez que votre fichier contient des noms et des prix.')
+          setImporting(false)
+          return
+        }
+
+        setProduitsImportes(produitsValides)
+        setImportEtape('apercu')
+      } catch {
+        alert('Erreur de connexion. Verifiez votre connexion internet et reessayez.')
+      }
+      setImporting(false)
+    }
+
+    reader.onerror = () => {
+      alert('Impossible de lire le fichier.')
+      setImporting(false)
+    }
+
+    reader.readAsText(file, 'UTF-8')
+  }
+
+  const handleConfirmerImport = async () => {
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data } = await supabase.from('catalogue').insert(
+      produitsImportes.map(p => ({ ...p, user_id: user?.id }))
+    ).select()
+    if (data) {
+      setProduits(p => [...p, ...data].sort((a, b) => (a.categorie || '').localeCompare(b.categorie || '')))
+    }
+    setShowImport(false)
+    setImportEtape('upload')
+    setProduitsImportes([])
+    if (fileRef.current) fileRef.current.value = ''
+    setSaving(false)
+    alert(produitsImportes.length + ' produits importes avec succes !')
+  }
+
+  const fermerImport = () => {
+    setShowImport(false)
+    setImportEtape('upload')
+    setProduitsImportes([])
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }))
 
   const filtered = produits.filter(p =>
@@ -78,11 +205,92 @@ export default function Catalogue() {
         back="/dashboard"
         backLabel="← Dashboard"
         action={
-          <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
-            + Ajouter
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setShowImport(true)} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">
+              📂 Importer
+            </button>
+            <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
+              + Ajouter
+            </button>
+          </div>
         }
       />
+
+      {/* Modal Import */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-gray-900 text-lg">Importer un catalogue</h2>
+              <button onClick={fermerImport} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+            </div>
+
+            {importEtape === 'upload' && (
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Importez votre catalogue depuis un fichier CSV ou TXT.</p>
+                <p className="text-xs text-amber-600 mb-4">Excel : Fichier → Enregistrer sous → CSV pour l ouvrir ici.</p>
+                <div
+                  className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition"
+                  onClick={() => !importing && fileRef.current?.click()}
+                >
+                  {importing ? (
+                    <div>
+                      <p className="text-2xl mb-2">⏳</p>
+                      <p className="text-sm text-blue-600 font-medium">Analyse en cours...</p>
+                      <p className="text-xs text-gray-400 mt-1">L IA extrait vos produits</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-3xl mb-2">📂</p>
+                      <p className="text-sm font-medium text-gray-700">Cliquez pour choisir un fichier</p>
+                      <p className="text-xs text-gray-400 mt-1">CSV et TXT uniquement — max 2Mo</p>
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".csv,.txt"
+                  className="hidden"
+                  onChange={handleImportFichier}
+                />
+              </div>
+            )}
+
+            {importEtape === 'apercu' && (
+              <div>
+                <p className="text-sm text-green-600 font-medium mb-3">✅ {produitsImportes.length} produits detectes</p>
+                <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg mb-4">
+                  {produitsImportes.map((p, i) => (
+                    <div key={i} className="flex justify-between items-center px-4 py-3 border-b border-gray-100 last:border-b-0">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{p.nom}</p>
+                        <p className="text-xs text-gray-400">{p.categorie}{p.reference ? ' · ' + p.reference : ''}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900 whitespace-nowrap ml-4">{p.prix_ht} EUR / {p.unite}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleConfirmerImport}
+                    disabled={saving}
+                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {saving ? 'Import en cours...' : 'Confirmer l import'}
+                  </button>
+                  <button
+                    onClick={() => { setImportEtape('upload'); setProduitsImportes([]); if (fileRef.current) fileRef.current.value = '' }}
+                    className="px-4 text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    Recommencer
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-3xl mx-auto px-6 py-8 pb-24">
         <div className="flex justify-between items-center mb-6">
