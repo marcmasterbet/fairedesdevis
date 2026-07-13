@@ -48,7 +48,6 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
       if (!user) { router.push('/login'); return }
       const { data } = await supabase.from('devis').select('*').eq('id', id).single()
       setDevis(data)
-      // Vérifier si une facture existe déjà pour ce devis
       const { data: factureExistante } = await supabase.from('factures').select('id').eq('devis_id', id).single()
       if (factureExistante) setFactureId(factureExistante.id)
       setLoading(false)
@@ -66,14 +65,32 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
     const { count } = await supabase.from('factures').select('*', { count: 'exact', head: true }).eq('user_id', user?.id)
     const numero = 'FAC-' + annee + '-' + String((count || 0) + 1).padStart(3, '0')
 
-    // Remplacer DEVIS par FACTURE dans le contenu HTML
-    const contenuFacture = devis.contenu
-      .replace(/DEVIS/g, 'FACTURE')
-      .replace(/DEV-/g, 'FAC-')
-      .replace(devis.numero, numero)
-
     const dateEcheance = new Date()
     dateEcheance.setDate(dateEcheance.getDate() + 30)
+
+    const response = await fetch('/api/generer-devis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: `Genere une FACTURE en HTML avec CSS inline, meme style que le devis (couleur principale #2563eb, police Arial) mais avec ces differences :
+- Le mot "FACTURE" en grand bleu #2563eb a droite au lieu de "DEVIS"
+- Numero facture : ${numero}
+- Date emission : ${new Date().toLocaleDateString('fr-FR')}
+- Date echeance : ${dateEcheance.toLocaleDateString('fr-FR')}
+- Memes infos prestataire, client, tableau des prestations et montants que le devis
+- PAS de zone signature
+- PAS de section acompte ni solde
+- A la place des conditions de paiement : juste IBAN et BIC si presents
+- TOTAL TTC dans un bloc bleu #2563eb comme sur le devis
+- Mention "Facture payable a reception" en bas
+
+IMPORTANT : Reprends exactement les donnees du devis ci-dessous et adapte en facture :
+${devis.contenu.substring(0, 4000)}`
+      })
+    })
+
+    const result = await response.json()
+    const contenuFacture = result.contenu
 
     const { data } = await supabase.from('factures').insert({
       user_id: user?.id,
@@ -179,7 +196,7 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
             )}
             {devis.statut === 'accepte' && !factureId && (
               <button onClick={handleTransformerEnFacture} disabled={transforming} className="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50">
-                {transforming ? 'Creation...' : '🧾 Facturer'}
+                {transforming ? 'Generation...' : '🧾 Facturer'}
               </button>
             )}
             {devis.statut === 'accepte' && factureId && (
