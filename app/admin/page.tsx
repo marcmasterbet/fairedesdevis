@@ -9,6 +9,7 @@ interface Utilisateur {
   id: string
   email: string
   created_at: string
+  banned_until?: string
   user_metadata: {
     nom: string
     metier: string
@@ -25,24 +26,71 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ totalUsers: 0, totalDevis: 0, totalFactures: 0, totalMontant: 0 })
   const [search, setSearch] = useState('')
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [showEmailModal, setShowEmailModal] = useState<Utilisateur | null>(null)
+  const [emailMessage, setEmailMessage] = useState('')
   const router = useRouter()
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user || user.email !== ADMIN_EMAIL) {
-        router.push('/')
-        return
-      }
-
-      const res = await fetch('/api/admin/users')
-      const data = await res.json()
-      setUsers(data.users || [])
-      setStats(data.stats || {})
-      setLoading(false)
+      if (!user) { router.push('/login'); return }
+      if (user.email !== ADMIN_EMAIL) { router.push('/'); return }
+      chargerUsers()
     }
     init()
   }, [router])
+
+  const chargerUsers = async () => {
+    const res = await fetch('/api/admin/users')
+    const data = await res.json()
+    setUsers(data.users || [])
+    setStats(data.stats || {})
+    setLoading(false)
+  }
+
+  const handleAction = async (action: string, user: Utilisateur) => {
+    if (action === 'supprimer' && !confirm('Supprimer définitivement ' + user.email + ' et toutes ses données ?')) return
+    if (action === 'suspendre' && !confirm('Suspendre le compte de ' + user.email + ' ?')) return
+    if (action === 'reactiver' && !confirm('Réactiver le compte de ' + user.email + ' ?')) return
+
+    setActionLoading(user.id + action)
+    const res = await fetch('/api/admin/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, userId: user.id, email: user.email })
+    })
+    if (res.ok) {
+      alert('Action effectuée avec succès')
+      chargerUsers()
+    } else {
+      alert('Erreur lors de l action')
+    }
+    setActionLoading(null)
+  }
+
+  const handleEnvoyerEmail = async () => {
+    if (!emailMessage.trim()) { alert('Écrivez un message'); return }
+    setActionLoading('email')
+    const res = await fetch('/api/admin/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'email', userId: showEmailModal?.id, email: showEmailModal?.email, message: emailMessage })
+    })
+    if (res.ok) {
+      alert('Email envoyé !')
+      setShowEmailModal(null)
+      setEmailMessage('')
+    } else {
+      alert('Erreur envoi email')
+    }
+    setActionLoading(null)
+  }
+
+  const estSuspendu = (user: Utilisateur) => {
+    if (!user.banned_until) return false
+    return new Date(user.banned_until) > new Date()
+  }
 
   const filtered = users.filter(u =>
     u.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -58,6 +106,38 @@ export default function Admin() {
 
   return (
     <main className="min-h-screen bg-gray-50">
+
+      {/* Modal email */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-gray-900">Envoyer un email à {showEmailModal.user_metadata?.nom}</h2>
+              <button onClick={() => setShowEmailModal(null)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+            </div>
+            <p className="text-sm text-gray-500 mb-3">À : {showEmailModal.email}</p>
+            <textarea
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 h-32 resize-none mb-4"
+              placeholder="Votre message..."
+              value={emailMessage}
+              onChange={e => setEmailMessage(e.target.value)}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={handleEnvoyerEmail}
+                disabled={actionLoading === 'email'}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+              >
+                {actionLoading === 'email' ? 'Envoi...' : 'Envoyer'}
+              </button>
+              <button onClick={() => setShowEmailModal(null)} className="px-4 text-gray-400 hover:text-gray-600 text-sm">
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white border-b px-6 py-4 flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-blue-600">FaireDesDevis</h1>
@@ -104,29 +184,57 @@ export default function Admin() {
           </div>
           <div className="divide-y divide-gray-100">
             {filtered.map(u => (
-              <div key={u.id} className="px-6 py-4">
+              <div key={u.id} className={'px-6 py-4 ' + (estSuspendu(u) ? 'bg-red-50' : '')}>
                 <div className="flex justify-between items-start flex-wrap gap-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-semibold text-gray-900">{u.user_metadata?.nom || '—'}</p>
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{u.user_metadata?.metier || '—'}</span>
+                      {estSuspendu(u) && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Suspendu</span>}
                     </div>
                     <p className="text-sm text-gray-500">{u.email}</p>
-                    {u.user_metadata?.siret && (
-                      <p className="text-xs text-gray-400 mt-1">SIRET : {u.user_metadata.siret}</p>
-                    )}
-                    {u.user_metadata?.telephone && (
-                      <p className="text-xs text-gray-400">Tel : {u.user_metadata.telephone}</p>
-                    )}
-                    {u.user_metadata?.adresse && (
-                      <p className="text-xs text-gray-400">{u.user_metadata.adresse}</p>
-                    )}
+                    {u.user_metadata?.siret && <p className="text-xs text-gray-400 mt-1">SIRET : {u.user_metadata.siret}</p>}
+                    {u.user_metadata?.telephone && <p className="text-xs text-gray-400">Tel : {u.user_metadata.telephone}</p>}
+                    {u.user_metadata?.adresse && <p className="text-xs text-gray-400">{u.user_metadata.adresse}</p>}
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-gray-400">Inscrit le {new Date(u.created_at).toLocaleDateString('fr-FR')}</p>
-                    <p className="text-sm font-semibold text-gray-900 mt-1">{u.nbDevis || 0} devis</p>
-                    <p className="text-sm text-gray-500">{u.nbFactures || 0} factures</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">{u.nbDevis || 0} devis · {u.nbFactures || 0} factures</p>
                   </div>
+                </div>
+
+                {/* Boutons d action */}
+                <div className="flex gap-2 mt-3 flex-wrap">
+                  <button
+                    onClick={() => setShowEmailModal(u)}
+                    className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-100"
+                  >
+                    ✉️ Envoyer email
+                  </button>
+                  {estSuspendu(u) ? (
+                    <button
+                      onClick={() => handleAction('reactiver', u)}
+                      disabled={actionLoading === u.id + 'reactiver'}
+                      className="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-100 disabled:opacity-50"
+                    >
+                      ✅ Réactiver
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleAction('suspendre', u)}
+                      disabled={actionLoading === u.id + 'suspendre'}
+                      className="bg-amber-50 text-amber-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-100 disabled:opacity-50"
+                    >
+                      🔒 Suspendre
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleAction('supprimer', u)}
+                    disabled={actionLoading === u.id + 'supprimer'}
+                    className="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100 disabled:opacity-50"
+                  >
+                    🗑️ Supprimer
+                  </button>
                 </div>
               </div>
             ))}
