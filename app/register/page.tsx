@@ -62,6 +62,11 @@ export default function Register() {
       setError(error.message)
       setLoading(false)
     } else {
+      await fetch('/api/notifier-inscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom, email, metier })
+      })
       setSuccess(true)
       setLoading(false)
     }
