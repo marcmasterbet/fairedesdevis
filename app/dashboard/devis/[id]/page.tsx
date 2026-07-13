@@ -8,8 +8,14 @@ import NavBar from '../../../components/NavBar'
 interface Devis {
   id: string
   numero: string
+  client_id: string
   client_nom: string
   client_email: string
+  client_adresse: string
+  client_siret: string
+  description: string
+  montant_ht: number
+  tva: number
   montant_ttc: number
   statut: string
   contenu: string
@@ -32,6 +38,8 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [transforming, setTransforming] = useState(false)
+  const [factureId, setFactureId] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -40,10 +48,59 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
       if (!user) { router.push('/login'); return }
       const { data } = await supabase.from('devis').select('*').eq('id', id).single()
       setDevis(data)
+      // Vérifier si une facture existe déjà pour ce devis
+      const { data: factureExistante } = await supabase.from('factures').select('id').eq('devis_id', id).single()
+      if (factureExistante) setFactureId(factureExistante.id)
       setLoading(false)
     }
     init()
   }, [id, router])
+
+  const handleTransformerEnFacture = async () => {
+    if (!devis) return
+    if (!confirm('Transformer ce devis en facture ?')) return
+    setTransforming(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    const annee = new Date().getFullYear()
+    const { count } = await supabase.from('factures').select('*', { count: 'exact', head: true }).eq('user_id', user?.id)
+    const numero = 'FAC-' + annee + '-' + String((count || 0) + 1).padStart(3, '0')
+
+    // Remplacer DEVIS par FACTURE dans le contenu HTML
+    const contenuFacture = devis.contenu
+      .replace(/DEVIS/g, 'FACTURE')
+      .replace(/DEV-/g, 'FAC-')
+      .replace(devis.numero, numero)
+
+    const dateEcheance = new Date()
+    dateEcheance.setDate(dateEcheance.getDate() + 30)
+
+    const { data } = await supabase.from('factures').insert({
+      user_id: user?.id,
+      devis_id: id,
+      numero,
+      client_id: devis.client_id,
+      client_nom: devis.client_nom,
+      client_email: devis.client_email,
+      client_adresse: devis.client_adresse,
+      client_siret: devis.client_siret,
+      description: devis.description,
+      montant_ht: devis.montant_ht,
+      tva: devis.tva,
+      montant_ttc: devis.montant_ttc,
+      statut: 'en_attente',
+      date_echeance: dateEcheance.toISOString().split('T')[0],
+      contenu: contenuFacture
+    }).select()
+
+    if (data && data[0]) {
+      setFactureId(data[0].id)
+      router.push('/dashboard/factures/' + data[0].id)
+    } else {
+      alert('Erreur lors de la creation de la facture')
+    }
+    setTransforming(false)
+  }
 
   const handleEnvoyer = async () => {
     if (!devis) return
@@ -119,6 +176,16 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
             )}
             {devis.statut !== 'accepte' && (
               <button onClick={handleEnvoyer} disabled={sending} className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">{sending ? 'Envoi...' : sent ? 'Envoye' : 'Envoyer au client'}</button>
+            )}
+            {devis.statut === 'accepte' && !factureId && (
+              <button onClick={handleTransformerEnFacture} disabled={transforming} className="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50">
+                {transforming ? 'Creation...' : '🧾 Facturer'}
+              </button>
+            )}
+            {devis.statut === 'accepte' && factureId && (
+              <a href={'/dashboard/factures/' + factureId} className="bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-200">
+                Voir la facture
+              </a>
             )}
             <button onClick={() => window.print()} className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800">PDF</button>
             <button onClick={handleSupprimer} className="text-red-400 hover:text-red-600 px-3 py-2 text-sm font-semibold">Supprimer</button>
