@@ -19,6 +19,15 @@ interface Client {
   created_at: string
 }
 
+interface DevisClient {
+  id: string
+  numero: string
+  description: string
+  montant_ttc: number
+  statut: string
+  created_at: string
+}
+
 const emptyForm = {
   nom: '', email: '', telephone: '', telephone_fixe: '',
   adresse: '', code_postal: '', ville: '', pays: 'France', siret: ''
@@ -33,6 +42,8 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [search, setSearch] = useState('')
   const [form, setForm] = useState(emptyForm)
+  const [devisClient, setDevisClient] = useState<DevisClient[]>([])
+  const [loadingDevis, setLoadingDevis] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -45,6 +56,18 @@ export default function Clients() {
     }
     init()
   }, [router])
+
+  const ouvrirClient = async (client: Client) => {
+    setSelectedClient(client)
+    setLoadingDevis(true)
+    const { data } = await supabase
+      .from('devis')
+      .select('id, numero, description, montant_ttc, statut, created_at')
+      .eq('client_id', client.id)
+      .order('created_at', { ascending: false })
+    setDevisClient(data || [])
+    setLoadingDevis(false)
+  }
 
   const handleSave = async () => {
     if (!form.nom || !form.email) { alert('Nom et email obligatoires'); return }
@@ -90,6 +113,14 @@ export default function Clients() {
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }))
   const setEdit = (key: string, val: string) => setEditingClient(e => e ? { ...e, [key]: val } : e)
 
+  const statutColor = (statut: string) => {
+    if (statut === 'accepte') return 'bg-green-100 text-green-700'
+    if (statut === 'refuse') return 'bg-red-100 text-red-700'
+    if (statut === 'envoye') return 'bg-blue-100 text-blue-700'
+    if (statut === 'archive') return 'bg-gray-100 text-gray-500'
+    return 'bg-gray-100 text-gray-600'
+  }
+
   const filtered = clients.filter(c =>
     c.nom.toLowerCase().includes(search.toLowerCase()) ||
     c.email.toLowerCase().includes(search.toLowerCase()) ||
@@ -134,6 +165,8 @@ export default function Clients() {
         />
         <div className="max-w-2xl mx-auto px-6 py-8 pb-24">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">{selectedClient.nom}</h1>
+
+          {/* Coordonnees */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
             <h2 className="font-semibold text-gray-900 mb-4">Coordonnees</h2>
             <div className="space-y-3">
@@ -181,6 +214,47 @@ export default function Clients() {
               </div>
             </div>
           </div>
+
+          {/* Historique devis */}
+          {!editing && (
+            <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-semibold text-gray-900">Historique des devis</h2>
+                <span className="text-xs text-gray-400">{devisClient.length} devis</span>
+              </div>
+              {loadingDevis ? (
+                <p className="text-sm text-gray-400 text-center py-4">Chargement...</p>
+              ) : devisClient.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Aucun devis pour ce client</p>
+              ) : (
+                <div className="space-y-2">
+                  {devisClient.map(devis => (
+                    
+                      <a
+                      key={devis.id}
+                      href={'/dashboard/devis/' + devis.id}
+                      className="flex justify-between items-center p-3 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-sm font-semibold text-gray-900">{devis.numero}</p>
+                          <span className={'px-2 py-0.5 rounded-full text-xs font-medium ' + statutColor(devis.statut)}>
+                            {devis.statut}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400 truncate">{devis.description || '—'}</p>
+                      </div>
+                      <div className="text-right ml-4 flex-shrink-0">
+                        <p className="text-sm font-bold text-gray-900">{Number(devis.montant_ttc).toFixed(2)} EUR</p>
+                        <p className="text-xs text-gray-400">{new Date(devis.created_at).toLocaleDateString('fr-FR')}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {!editing && (
             <a href={'/dashboard/devis/nouveau?client=' + selectedClient.id} className="block text-center bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700">
               Creer un devis pour ce client
@@ -290,7 +364,7 @@ export default function Clients() {
               <div
                 key={client.id}
                 className="bg-white rounded-xl border border-gray-200 p-4 flex justify-between items-start hover:border-blue-200 transition cursor-pointer"
-                onClick={() => setSelectedClient(client)}
+                onClick={() => ouvrirClient(client)}
               >
                 <div>
                   <p className="font-semibold text-gray-900">{client.nom}</p>
