@@ -18,6 +18,14 @@ interface Devis {
   signature_image: string
 }
 
+function injecterSignatureClient(contenu: string, signePar: string, signeLeDate: string, signatureImage: string): string {
+  const mention = signePar || ''
+  const date = signeLeDate ? new Date(signeLeDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
+  const imgTag = signatureImage ? '<img src="' + signatureImage + '" style="max-height:70px;display:block;margin-top:6px" alt="Signature client" />' : ''
+  const bloc = '<div style="margin-top:8px"><p style="font-size:12px;color:#1e293b;font-weight:600;margin:0">' + mention + '</p>' + imgTag + '<p style="font-size:11px;color:#94a3b8;margin-top:6px">Signe le ' + date + '</p></div>'
+  return contenu.replace(/height\s*:\s*80px[^"]*"[^>]*><\/div>/, 'height:80px">' + bloc + '</div>')
+}
+
 export default function DevisPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [devis, setDevis] = useState<Devis | null>(null)
@@ -92,6 +100,10 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
 
   const statutColor = devis.statut === 'accepte' ? 'bg-green-100 text-green-700' : devis.statut === 'refuse' ? 'bg-red-100 text-red-700' : devis.statut === 'envoye' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
 
+  const contenuAffiche = devis.statut === 'accepte' && devis.signature_image
+    ? injecterSignatureClient(devis.contenu, devis.signe_par, devis.signe_le, devis.signature_image)
+    : devis.contenu
+
   return (
     <div style={{backgroundColor:'#f1f5f9',minHeight:'100vh'}}>
       <div className="print:hidden bg-white border-b px-4 py-3 sticky top-0 z-10">
@@ -122,42 +134,16 @@ export default function DevisPage({ params }: { params: Promise<{ id: string }> 
         </div>
       )}
 
-      <div className="max-w-3xl mx-auto my-6 bg-white shadow-sm rounded-xl overflow-hidden print:shadow-none print:my-0 print:max-w-none">
-        <div style={{padding:'48px'}} dangerouslySetInnerHTML={{__html:devis.contenu}} />
-
-        {devis.statut === 'accepte' && (
-          <div style={{padding:'0 48px 48px'}}>
-            <div style={{borderTop:'2px solid #e2e8f0',paddingTop:'32px',marginTop:'8px'}}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'32px'}}>
-                <div>
-                  <p style={{fontSize:'13px',fontWeight:'600',color:'#374151',marginBottom:'8px'}}>Signature du prestataire</p>
-                  <div style={{border:'1px solid #e2e8f0',borderRadius:'8px',height:'112px',background:'#f9fafb',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    <p style={{fontSize:'12px',color:'#9ca3af'}}>Signature prestataire</p>
-                  </div>
-                </div>
-                <div>
-                  <p style={{fontSize:'13px',fontWeight:'600',color:'#374151',marginBottom:'8px'}}>Signature du client</p>
-                  <div style={{border:'1px solid #e2e8f0',borderRadius:'8px',padding:'12px',background:'#f9fafb'}}>
-                    {devis.signe_par && (
-                      <p style={{fontSize:'12px',color:'#4b5563',marginBottom:'8px',fontWeight:'500'}}>{devis.signe_par}</p>
-                    )}
-                    {devis.signature_image && (
-                      <img src={devis.signature_image} alt="Signature client" style={{maxHeight:'80px',margin:'0 auto',display:'block'}} />
-                    )}
-                    {devis.signe_le && (
-                      <p style={{fontSize:'11px',color:'#9ca3af',marginTop:'8px',textAlign:'center'}}>
-                        Signe le {new Date(devis.signe_le).toLocaleDateString('fr-FR', {
-                          day:'2-digit', month:'2-digit', year:'numeric',
-                          hour:'2-digit', minute:'2-digit'
-                        })}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+      {devis.statut === 'accepte' && (
+        <div className="max-w-3xl mx-auto mt-4 px-4 print:hidden">
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+            ✅ Accepte et signe par {devis.signe_par} — le {devis.signe_le ? new Date(devis.signe_le).toLocaleDateString('fr-FR') : ''}
           </div>
-        )}
+        </div>
+      )}
+
+      <div className="max-w-3xl mx-auto my-6 bg-white shadow-sm rounded-xl overflow-hidden print:shadow-none print:my-0 print:max-w-none">
+        <div style={{padding:'48px'}} dangerouslySetInnerHTML={{__html: contenuAffiche}} />
       </div>
 
       <div style={{height:'80px'}} className="print:hidden" />
