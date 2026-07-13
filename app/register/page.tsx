@@ -13,12 +13,17 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
 
   const getPasswordStrength = (pwd: string) => {
-    if (pwd.length === 0) return { label: '', color: '' }
-    if (pwd.length < 6) return { label: 'Trop court', color: 'bg-red-400' }
-    if (pwd.length < 8) return { label: 'Faible', color: 'bg-orange-400' }
-    if (!/[A-Z]/.test(pwd) || !/[0-9]/.test(pwd)) return { label: 'Moyen', color: 'bg-yellow-400' }
-    return { label: 'Fort', color: 'bg-green-400' }
-  }
+  if (pwd.length === 0) return { label: '', color: '' }
+  if (pwd.length < 8) return { label: 'Trop court', color: 'bg-red-400' }
+  const hasUpper = /[A-Z]/.test(pwd)
+  const hasNumber = /[0-9]/.test(pwd)
+  const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+  const score = [hasUpper, hasNumber, hasSymbol].filter(Boolean).length
+  if (score === 0) return { label: 'Faible', color: 'bg-red-400' }
+  if (score === 1) return { label: 'Moyen', color: 'bg-orange-400' }
+  if (score === 2) return { label: 'Bien', color: 'bg-yellow-400' }
+  return { label: 'Fort', color: 'bg-green-400' }
+}
 
   const strength = getPasswordStrength(password)
 
@@ -27,8 +32,20 @@ export default function Register() {
       setError('Veuillez remplir tous les champs.')
       return
     }
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.')
+    if (password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères.')
+      return
+    }
+    if (!/[A-Z]/.test(password)) {
+      setError('Le mot de passe doit contenir au moins une majuscule.')
+      return
+    }
+    if (!/[0-9]/.test(password)) {
+      setError('Le mot de passe doit contenir au moins un chiffre.')
+      return
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      setError('Le mot de passe doit contenir au moins un symbole (!@#$%...).')
       return
     }
     setLoading(true)
