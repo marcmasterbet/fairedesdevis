@@ -23,6 +23,14 @@ interface ProduitImporte {
   unite: string
 }
 
+interface EditForm {
+  nom: string
+  reference: string
+  categorie: string
+  prix_ht: string
+  unite: string
+}
+
 export default function Catalogue() {
   const [produits, setProduits] = useState<Produit[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,6 +43,9 @@ export default function Catalogue() {
   const [importing, setImporting] = useState(false)
   const [produitsImportes, setProduitsImportes] = useState<ProduitImporte[]>([])
   const [importEtape, setImportEtape] = useState<'upload' | 'apercu'>('upload')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<EditForm>({ nom: '', reference: '', categorie: '', prix_ht: '', unite: 'unite' })
+  const [editSaving, setEditSaving] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
@@ -68,6 +79,34 @@ export default function Catalogue() {
     if (!confirm('Supprimer ce produit ?')) return
     await supabase.from('catalogue').delete().eq('id', id)
     setProduits(p => p.filter(pr => pr.id !== id))
+  }
+
+  const handleEditOpen = (produit: Produit) => {
+    setEditingId(produit.id)
+    setEditForm({
+      nom: produit.nom,
+      reference: produit.reference || '',
+      categorie: produit.categorie || '',
+      prix_ht: String(produit.prix_ht),
+      unite: produit.unite || 'unite'
+    })
+  }
+
+  const handleEditSave = async () => {
+    if (!editForm.nom || !editForm.prix_ht) { alert('Nom et prix obligatoires'); return }
+    setEditSaving(true)
+    const { data } = await supabase.from('catalogue').update({
+      nom: editForm.nom,
+      reference: editForm.reference,
+      categorie: editForm.categorie,
+      prix_ht: parseFloat(editForm.prix_ht),
+      unite: editForm.unite
+    }).eq('id', editingId!).select()
+    if (data) {
+      setProduits(p => p.map(pr => pr.id === editingId ? data[0] : pr).sort((a, b) => (a.categorie || '').localeCompare(b.categorie || '')))
+    }
+    setEditingId(null)
+    setEditSaving(false)
   }
 
   const handleImportFichier = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,8 +224,8 @@ ${contenu.slice(0, 8000)}`
   }
 
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }))
+  const setEdit = (key: string, val: string) => setEditForm(f => ({ ...f, [key]: val }))
 
-  // Filtrage par recherche uniquement sur nom et reference
   const parRecherche = search.length > 0
     ? produits.filter(p =>
         p.nom.toLowerCase().includes(search.toLowerCase()) ||
@@ -194,10 +233,8 @@ ${contenu.slice(0, 8000)}`
       )
     : produits
 
-  // Toutes les categories
   const toutesCategories = ['Toutes', ...Array.from(new Set(produits.map(p => p.categorie || 'Autre'))).sort()]
 
-  // Filtrage par categorie active (sauf si recherche en cours)
   const filtered = search.length > 0
     ? parRecherche
     : categorieActive === 'Toutes'
@@ -260,13 +297,7 @@ ${contenu.slice(0, 8000)}`
                     </div>
                   )}
                 </div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".csv,.txt"
-                  className="hidden"
-                  onChange={handleImportFichier}
-                />
+                <input ref={fileRef} type="file" accept=".csv,.txt" className="hidden" onChange={handleImportFichier} />
               </div>
             )}
 
@@ -285,17 +316,10 @@ ${contenu.slice(0, 8000)}`
                   ))}
                 </div>
                 <div className="flex gap-3">
-                  <button
-                    onClick={handleConfirmerImport}
-                    disabled={saving}
-                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
-                  >
+                  <button onClick={handleConfirmerImport} disabled={saving} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">
                     {saving ? 'Import en cours...' : 'Confirmer l import'}
                   </button>
-                  <button
-                    onClick={() => { setImportEtape('upload'); setProduitsImportes([]); if (fileRef.current) fileRef.current.value = '' }}
-                    className="px-4 text-gray-400 hover:text-gray-600 text-sm"
-                  >
+                  <button onClick={() => { setImportEtape('upload'); setProduitsImportes([]); if (fileRef.current) fileRef.current.value = '' }} className="px-4 text-gray-400 hover:text-gray-600 text-sm">
                     Recommencer
                   </button>
                 </div>
@@ -419,15 +443,76 @@ ${contenu.slice(0, 8000)}`
                     )}
                     <div className="divide-y divide-gray-100">
                       {filtered.filter(p => (p.categorie || 'Autre') === cat).map(produit => (
-                        <div key={produit.id} className="px-4 py-3 flex justify-between items-center">
-                          <div>
-                            <p className="font-medium text-gray-900 text-sm">{produit.nom}</p>
-                            {produit.reference && <p className="text-xs text-gray-400">{produit.reference}</p>}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-semibold text-gray-900 text-sm">{produit.prix_ht} EUR <span className="text-gray-400 font-normal">/ {produit.unite}</span></span>
-                            <button onClick={() => handleDelete(produit.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
-                          </div>
+                        <div key={produit.id}>
+                          {editingId === produit.id ? (
+                            /* Formulaire d edition inline */
+                            <div className="px-4 py-4 bg-blue-50 border-l-4 border-blue-500">
+                              <div className="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                  <label className="text-xs text-gray-500 mb-1 block">Nom *</label>
+                                  <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500" value={editForm.nom} onChange={e => setEdit('nom', e.target.value)} />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500 mb-1 block">Reference</label>
+                                  <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500" value={editForm.reference} onChange={e => setEdit('reference', e.target.value)} />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 mb-3">
+                                <div>
+                                  <label className="text-xs text-gray-500 mb-1 block">Categorie</label>
+                                  <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500" value={editForm.categorie} onChange={e => setEdit('categorie', e.target.value)} />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500 mb-1 block">Prix HT *</label>
+                                  <input type="number" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500" value={editForm.prix_ht} onChange={e => setEdit('prix_ht', e.target.value)} />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500 mb-1 block">Unite</label>
+                                  <select className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500" value={editForm.unite} onChange={e => setEdit('unite', e.target.value)}>
+                                    <option value="unite">unite</option>
+                                    <option value="forfait">forfait</option>
+                                    <option value="heure">heure</option>
+                                    <option value="jour">jour</option>
+                                    <option value="m2">m2</option>
+                                    <option value="ml">ml</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={handleEditSave} disabled={editSaving} className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+                                  {editSaving ? 'Sauvegarde...' : 'Sauvegarder'}
+                                </button>
+                                <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-sm px-3">
+                                  Annuler
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            /* Ligne normale */
+                            <div className="px-4 py-3 flex justify-between items-center hover:bg-gray-50 group">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900 text-sm">{produit.nom}</p>
+                                {produit.reference && <p className="text-xs text-gray-400">{produit.reference}</p>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-gray-900 text-sm">{produit.prix_ht} EUR <span className="text-gray-400 font-normal">/ {produit.unite}</span></span>
+                                <button
+                                  onClick={() => handleEditOpen(produit)}
+                                  className="text-gray-400 hover:text-blue-600 text-xs px-2 py-1 rounded hover:bg-blue-50 transition"
+                                  title="Modifier"
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(produit.id)}
+                                  className="text-red-400 hover:text-red-600 text-xs px-1"
+                                  title="Supprimer"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
