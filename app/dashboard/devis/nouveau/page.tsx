@@ -258,7 +258,7 @@ ZONE SIGNATURE en bas du document (display:flex, justify-content:space-between, 
 GAUCHE (flex:1, border-top:2px solid #e2e8f0, padding-top:12px) :
   titre "Signature du client" (font-size:13px, font-weight:bold, color:#1e293b)
   texte "En signant electroniquement ce devis, le client declare avoir lu et approuve l ensemble des conditions." (font-size:11px, color:#94a3b8, margin-top:4px)
-  zone vide OBLIGATOIRE : <div id="zone-signature-client" style="height:80px"></div>
+  zone vide OBLIGATOIRE : <div id="zone-signature-client" style="height:80px;"></div>
 DROITE (flex:1, border-top:2px solid #e2e8f0, padding-top:12px) :
   titre "Signature du prestataire" (font-size:13px, font-weight:bold, color:#1e293b)
   nom prestataire (font-size:12px, color:#64748b, margin-top:4px)

@@ -26,7 +26,7 @@ function injecterSignatureDansHTML(contenu: string, signePar: string, signeLeDat
     + '<img src="' + signatureImage + '" style="max-height:70px;display:block" alt="Signature client" />'
     + '<p style="font-size:11px;color:#94a3b8;margin-top:6px">Signe le ' + date + '</p>'
     + '</div>'
-  return contenu.replace('<div id="zone-signature-client" style="height:80px"></div>', blocSignature)
+  return contenu.replace('<div id="zone-signature-client" style="height:80px;"></div>', blocSignature)
 }
 
 export default function SignerDevis({ params }: { params: Promise<{ id: string }> }) {
