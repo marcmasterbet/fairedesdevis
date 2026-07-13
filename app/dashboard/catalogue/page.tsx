@@ -29,6 +29,7 @@ export default function Catalogue() {
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
+  const [categorieActive, setCategorieActive] = useState('Toutes')
   const [form, setForm] = useState({ nom: '', reference: '', categorie: '', prix_ht: '', unite: 'unite' })
   const [showImport, setShowImport] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -185,11 +186,23 @@ ${contenu.slice(0, 8000)}`
 
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }))
 
-  const filtered = produits.filter(p =>
-    p.nom.toLowerCase().includes(search.toLowerCase()) ||
-    p.categorie?.toLowerCase().includes(search.toLowerCase()) ||
-    p.reference?.toLowerCase().includes(search.toLowerCase())
-  )
+  // Filtrage par recherche uniquement sur nom et reference
+  const parRecherche = search.length > 0
+    ? produits.filter(p =>
+        p.nom.toLowerCase().includes(search.toLowerCase()) ||
+        p.reference?.toLowerCase().includes(search.toLowerCase())
+      )
+    : produits
+
+  // Toutes les categories
+  const toutesCategories = ['Toutes', ...Array.from(new Set(produits.map(p => p.categorie || 'Autre'))).sort()]
+
+  // Filtrage par categorie active (sauf si recherche en cours)
+  const filtered = search.length > 0
+    ? parRecherche
+    : categorieActive === 'Toutes'
+      ? produits
+      : produits.filter(p => (p.categorie || 'Autre') === categorieActive)
 
   const categories = [...new Set(filtered.map(p => p.categorie || 'Autre'))]
 
@@ -292,7 +305,7 @@ ${contenu.slice(0, 8000)}`
         </div>
       )}
 
-      <div className="max-w-3xl mx-auto px-6 py-8 pb-24">
+      <div className="max-w-4xl mx-auto px-6 py-8 pb-24">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Mon catalogue</h1>
@@ -348,13 +361,13 @@ ${contenu.slice(0, 8000)}`
         {produits.length > 0 && (
           <input
             className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 mb-4"
-            placeholder="Rechercher un produit..."
+            placeholder="Rechercher un produit par nom ou reference..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setCategorieActive('Toutes') }}
           />
         )}
 
-        {filtered.length === 0 && !showForm ? (
+        {produits.length === 0 && !showForm ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <p className="text-4xl mb-3">📦</p>
             <p className="text-gray-500 text-sm">Aucun produit dans votre catalogue</p>
@@ -363,28 +376,65 @@ ${contenu.slice(0, 8000)}`
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {categories.map(cat => (
-              <div key={cat} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-50 px-4 py-2 border-b">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{cat}</p>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {filtered.filter(p => (p.categorie || 'Autre') === cat).map(produit => (
-                    <div key={produit.id} className="px-4 py-3 flex justify-between items-center">
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{produit.nom}</p>
-                        {produit.reference && <p className="text-xs text-gray-400">{produit.reference}</p>}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold text-gray-900 text-sm">{produit.prix_ht} EUR <span className="text-gray-400 font-normal">/ {produit.unite}</span></span>
-                        <button onClick={() => handleDelete(produit.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
-                      </div>
-                    </div>
+          <div className="flex gap-4">
+            {/* Onglets categories a gauche */}
+            {!search && (
+              <div className="w-40 flex-shrink-0">
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden sticky top-20">
+                  {toutesCategories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategorieActive(cat)}
+                      className={'w-full text-left px-3 py-2.5 text-sm border-b border-gray-100 last:border-b-0 transition ' + (
+                        categorieActive === cat
+                          ? 'bg-blue-600 text-white font-semibold'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      )}
+                    >
+                      {cat}
+                      {cat !== 'Toutes' && (
+                        <span className={'ml-1 text-xs ' + (categorieActive === cat ? 'text-blue-200' : 'text-gray-400')}>
+                          ({produits.filter(p => (p.categorie || 'Autre') === cat).length})
+                        </span>
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Liste produits */}
+            <div className="flex-1 space-y-4">
+              {filtered.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                  <p className="text-gray-400 text-sm">Aucun produit trouve</p>
+                </div>
+              ) : (
+                categories.map(cat => (
+                  <div key={cat} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {(search || categorieActive === 'Toutes') && (
+                      <div className="bg-gray-50 px-4 py-2 border-b">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{cat}</p>
+                      </div>
+                    )}
+                    <div className="divide-y divide-gray-100">
+                      {filtered.filter(p => (p.categorie || 'Autre') === cat).map(produit => (
+                        <div key={produit.id} className="px-4 py-3 flex justify-between items-center">
+                          <div>
+                            <p className="font-medium text-gray-900 text-sm">{produit.nom}</p>
+                            {produit.reference && <p className="text-xs text-gray-400">{produit.reference}</p>}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-semibold text-gray-900 text-sm">{produit.prix_ht} EUR <span className="text-gray-400 font-normal">/ {produit.unite}</span></span>
+                            <button onClick={() => handleDelete(produit.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
       </div>
