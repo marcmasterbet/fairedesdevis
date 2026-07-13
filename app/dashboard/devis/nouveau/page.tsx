@@ -77,6 +77,12 @@ export default function NouveauDevis() {
       if (tvaUser) setTva(parseFloat(tvaUser))
       const taux = user.user_metadata?.['taux_horaire']
       if (taux) setTauxHoraire(parseFloat(taux))
+
+      // Pré-sélectionner le client si passé en paramètre URL
+      const params = new URLSearchParams(window.location.search)
+      const clientIdParam = params.get('client')
+      if (clientIdParam) setClientId(clientIdParam)
+
       setLoading(false)
     }
     init()
