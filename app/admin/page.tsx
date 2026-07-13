@@ -10,6 +10,7 @@ interface Utilisateur {
   email: string
   created_at: string
   banned_until?: string
+  suspendu?: boolean
   user_metadata: {
     nom: string
     metier: string
@@ -19,13 +20,17 @@ interface Utilisateur {
   }
   nbDevis?: number
   nbFactures?: number
+  joursDepuisInscription?: number
+  joursRestants?: number
+  essaiActif?: boolean
 }
 
 export default function Admin() {
   const [users, setUsers] = useState<Utilisateur[]>([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ totalUsers: 0, totalDevis: 0, totalFactures: 0, totalMontant: 0 })
+  const [stats, setStats] = useState({ totalUsers: 0, totalDevis: 0, totalFactures: 0, totalMontant: 0, essaisActifs: 0, essaisExpires: 0, suspendus: 0 })
   const [search, setSearch] = useState('')
+  const [filtre, setFiltre] = useState('tous')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [showEmailModal, setShowEmailModal] = useState<Utilisateur | null>(null)
   const [emailMessage, setEmailMessage] = useState('')
@@ -42,6 +47,7 @@ export default function Admin() {
   }, [router])
 
   const chargerUsers = async () => {
+    setLoading(true)
     const res = await fetch('/api/admin/users')
     const data = await res.json()
     setUsers(data.users || [])
@@ -87,16 +93,16 @@ export default function Admin() {
     setActionLoading(null)
   }
 
-  const estSuspendu = (user: Utilisateur) => {
-    if (!user.banned_until) return false
-    return new Date(user.banned_until) > new Date()
-  }
-
-  const filtered = users.filter(u =>
-    u.email?.toLowerCase().includes(search.toLowerCase()) ||
-    u.user_metadata?.nom?.toLowerCase().includes(search.toLowerCase()) ||
-    u.user_metadata?.metier?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = users.filter(u => {
+    const matchSearch = u.email?.toLowerCase().includes(search.toLowerCase()) ||
+      u.user_metadata?.nom?.toLowerCase().includes(search.toLowerCase()) ||
+      u.user_metadata?.metier?.toLowerCase().includes(search.toLowerCase())
+    const matchFiltre = filtre === 'tous' ||
+      (filtre === 'actif' && u.essaiActif && !u.suspendu) ||
+      (filtre === 'expire' && !u.essaiActif && !u.suspendu) ||
+      (filtre === 'suspendu' && u.suspendu)
+    return matchSearch && matchFiltre
+  })
 
   if (loading) return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -112,7 +118,7 @@ export default function Admin() {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold text-gray-900">Envoyer un email à {showEmailModal.user_metadata?.nom}</h2>
+              <h2 className="font-bold text-gray-900">Email à {showEmailModal.user_metadata?.nom}</h2>
               <button onClick={() => setShowEmailModal(null)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
             </div>
             <p className="text-sm text-gray-500 mb-3">À : {showEmailModal.email}</p>
@@ -123,16 +129,10 @@ export default function Admin() {
               onChange={e => setEmailMessage(e.target.value)}
             />
             <div className="flex gap-3">
-              <button
-                onClick={handleEnvoyerEmail}
-                disabled={actionLoading === 'email'}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
-              >
+              <button onClick={handleEnvoyerEmail} disabled={actionLoading === 'email'} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">
                 {actionLoading === 'email' ? 'Envoi...' : 'Envoyer'}
               </button>
-              <button onClick={() => setShowEmailModal(null)} className="px-4 text-gray-400 hover:text-gray-600 text-sm">
-                Annuler
-              </button>
+              <button onClick={() => setShowEmailModal(null)} className="px-4 text-gray-400 hover:text-gray-600 text-sm">Annuler</button>
             </div>
           </div>
         </div>
@@ -150,23 +150,55 @@ export default function Admin() {
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Dashboard Admin</h2>
 
         {/* Stats globales */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p className="text-3xl font-bold text-blue-600">{stats.totalUsers}</p>
+            <p className="text-2xl font-bold text-blue-600">{stats.totalUsers}</p>
             <p className="text-xs text-gray-500 mt-1">Utilisateurs</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p className="text-3xl font-bold text-gray-900">{stats.totalDevis}</p>
-            <p className="text-xs text-gray-500 mt-1">Devis créés</p>
+            <p className="text-2xl font-bold text-green-600">{stats.essaisActifs}</p>
+            <p className="text-xs text-gray-500 mt-1">Essais actifs</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p className="text-3xl font-bold text-gray-900">{stats.totalFactures}</p>
+            <p className="text-2xl font-bold text-orange-500">{stats.essaisExpires}</p>
+            <p className="text-xs text-gray-500 mt-1">Essais expirés</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p className="text-2xl font-bold text-red-500">{stats.suspendus}</p>
+            <p className="text-xs text-gray-500 mt-1">Suspendus</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p className="text-2xl font-bold text-gray-900">{stats.totalDevis}</p>
+            <p className="text-xs text-gray-500 mt-1">Devis</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p className="text-2xl font-bold text-gray-900">{stats.totalFactures}</p>
             <p className="text-xs text-gray-500 mt-1">Factures</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p className="text-3xl font-bold text-green-600">{Number(stats.totalMontant).toFixed(0)} EUR</p>
-            <p className="text-xs text-gray-500 mt-1">Montant total devis</p>
+            <p className="text-2xl font-bold text-green-600">{Number(stats.totalMontant).toFixed(0)}€</p>
+            <p className="text-xs text-gray-500 mt-1">Montant devis</p>
           </div>
+        </div>
+
+        {/* Filtres */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          {[
+            { key: 'tous', label: 'Tous' },
+            { key: 'actif', label: '🟢 Essai actif' },
+            { key: 'expire', label: '🟠 Essai expiré' },
+            { key: 'suspendu', label: '🔒 Suspendu' },
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFiltre(f.key)}
+              className={'px-4 py-2 rounded-lg text-sm font-medium transition ' + (
+                filtre === f.key ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
         {/* Recherche */}
@@ -184,22 +216,25 @@ export default function Admin() {
           </div>
           <div className="divide-y divide-gray-100">
             {filtered.map(u => (
-              <div key={u.id} className={'px-6 py-4 ' + (estSuspendu(u) ? 'bg-red-50' : '')}>
+              <div key={u.id} className={'px-6 py-4 ' + (u.suspendu ? 'bg-red-50' : '')}>
                 <div className="flex justify-between items-start flex-wrap gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-semibold text-gray-900">{u.user_metadata?.nom || '—'}</p>
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{u.user_metadata?.metier || '—'}</span>
-                      {estSuspendu(u) && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Suspendu</span>}
+                      {u.suspendu && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">🔒 Suspendu</span>}
+                      {!u.suspendu && u.essaiActif && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">🟢 Essai — {u.joursRestants} jours restants</span>}
+                      {!u.suspendu && !u.essaiActif && <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">🟠 Essai expiré — J+{u.joursDepuisInscription}</span>}
                     </div>
                     <p className="text-sm text-gray-500">{u.email}</p>
                     {u.user_metadata?.siret && <p className="text-xs text-gray-400 mt-1">SIRET : {u.user_metadata.siret}</p>}
                     {u.user_metadata?.telephone && <p className="text-xs text-gray-400">Tel : {u.user_metadata.telephone}</p>}
                     {u.user_metadata?.adresse && <p className="text-xs text-gray-400">{u.user_metadata.adresse}</p>}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex-shrink-0">
                     <p className="text-xs text-gray-400">Inscrit le {new Date(u.created_at).toLocaleDateString('fr-FR')}</p>
-                    <p className="text-sm font-semibold text-gray-900 mt-1">{u.nbDevis || 0} devis · {u.nbFactures || 0} factures</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">{u.nbDevis || 0} devis</p>
+                    <p className="text-sm text-gray-500">{u.nbFactures || 0} factures</p>
                   </div>
                 </div>
 
@@ -209,15 +244,15 @@ export default function Admin() {
                     onClick={() => setShowEmailModal(u)}
                     className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-100"
                   >
-                    ✉️ Envoyer email
+                    ✉️ Email
                   </button>
-                  {estSuspendu(u) ? (
+                  {u.suspendu ? (
                     <button
                       onClick={() => handleAction('reactiver', u)}
                       disabled={actionLoading === u.id + 'reactiver'}
                       className="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-100 disabled:opacity-50"
                     >
-                      ✅ Réactiver
+                      {actionLoading === u.id + 'reactiver' ? '...' : '✅ Réactiver'}
                     </button>
                   ) : (
                     <button
@@ -225,7 +260,7 @@ export default function Admin() {
                       disabled={actionLoading === u.id + 'suspendre'}
                       className="bg-amber-50 text-amber-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-100 disabled:opacity-50"
                     >
-                      🔒 Suspendre
+                      {actionLoading === u.id + 'suspendre' ? '...' : '🔒 Suspendre'}
                     </button>
                   )}
                   <button
@@ -233,7 +268,7 @@ export default function Admin() {
                     disabled={actionLoading === u.id + 'supprimer'}
                     className="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100 disabled:opacity-50"
                   >
-                    🗑️ Supprimer
+                    {actionLoading === u.id + 'supprimer' ? '...' : '🗑️ Supprimer'}
                   </button>
                 </div>
               </div>
