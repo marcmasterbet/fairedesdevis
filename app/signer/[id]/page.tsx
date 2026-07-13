@@ -19,6 +19,16 @@ interface Devis {
   signature_image: string
 }
 
+function injecterSignatureDansHTML(contenu: string, signePar: string, signeLeDate: string, signatureImage: string): string {
+  const date = new Date(signeLeDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const blocSignature = '<div style="margin-top:8px">'
+    + '<p style="font-size:12px;color:#1e293b;font-weight:600;margin:0 0 6px 0">' + signePar + '</p>'
+    + '<img src="' + signatureImage + '" style="max-height:70px;display:block" alt="Signature client" />'
+    + '<p style="font-size:11px;color:#94a3b8;margin-top:6px">Signe le ' + date + '</p>'
+    + '</div>'
+  return contenu.replace('<div id="zone-signature-client" style="height:80px"></div>', blocSignature)
+}
+
 export default function SignerDevis({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [devis, setDevis] = useState<Devis | null>(null)
@@ -29,9 +39,7 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
   const [signed, setSigned] = useState(false)
   const [refused, setRefused] = useState(false)
   const [step, setStep] = useState<'view' | 'sign' | 'refuse'>('view')
-  const [signatureImage, setSignatureImage] = useState<string | null>(null)
-  const [signePar, setSignePar] = useState<string | null>(null)
-  const [signeLeDate, setSigneLeDate] = useState<string | null>(null)
+  const [contenuSigne, setContenuSigne] = useState<string>('')
   const sigCanvas = useRef<SignatureCanvas>(null)
 
   useEffect(() => {
@@ -40,9 +48,7 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
       setDevis(data)
       if (data?.statut === 'accepte') {
         setSigned(true)
-        setSignatureImage(data.signature_image || null)
-        setSignePar(data.signe_par || null)
-        setSigneLeDate(data.signe_le || null)
+        setContenuSigne(data.contenu || '')
       }
       if (data?.statut === 'refuse') setRefused(true)
       setLoading(false)
@@ -68,12 +74,15 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
     const signeParVal = mentionBPA + ' — ' + nom
     const signeLe = new Date().toISOString()
 
+    const nouveauContenu = injecterSignatureDansHTML(devis!.contenu, signeParVal, signeLe, sigImg)
+
     await supabase.from('devis').update({
       statut: 'accepte',
       signe_par: signeParVal,
       signe_le: signeLe,
       signature_image: sigImg,
-      signe_ip: ip
+      signe_ip: ip,
+      contenu: nouveauContenu
     }).eq('id', id)
 
     await fetch('/api/notifier-signature', {
@@ -82,9 +91,7 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
       body: JSON.stringify({ devisId: id, action: 'accepte', nom, devis })
     })
 
-    setSignatureImage(sigImg)
-    setSignePar(signeParVal)
-    setSigneLeDate(signeLe)
+    setContenuSigne(nouveauContenu)
     setSigned(true)
     setSigning(false)
   }
@@ -122,45 +129,9 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
           Imprimer / Telecharger PDF
         </button>
       </div>
-
       <div className="max-w-3xl mx-auto my-6 bg-white shadow-sm rounded-xl overflow-hidden">
-        {/* Contenu du devis */}
-        <div className="p-8" dangerouslySetInnerHTML={{ __html: devis.contenu }} />
-
-        {/* Zone signature client */}
-        <div className="px-8 pb-8">
-          <div className="border-t pt-6 mt-4">
-            <div className="grid grid-cols-2 gap-8">
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">Signature du prestataire</p>
-                <div className="border border-gray-200 rounded-lg h-28 bg-gray-50 flex items-center justify-center">
-                  <p className="text-xs text-gray-400">Signature prestataire</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">Signature du client</p>
-                <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                  {signePar && (
-                    <p className="text-xs text-gray-600 mb-2 font-medium">{signePar}</p>
-                  )}
-                  {signatureImage && (
-                    <img src={signatureImage} alt="Signature client" className="max-h-20 mx-auto" />
-                  )}
-                  {signeLeDate && (
-                    <p className="text-xs text-gray-400 mt-2 text-center">
-                      Signe le {new Date(signeLeDate).toLocaleDateString('fr-FR', {
-                        day: '2-digit', month: '2-digit', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                      })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div className="p-8" dangerouslySetInnerHTML={{ __html: contenuSigne }} />
       </div>
-
       <div className="max-w-3xl mx-auto px-4 pb-8 print:hidden">
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
           <p className="text-green-700 font-semibold">✅ Devis accepte et signe</p>
@@ -199,16 +170,10 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
                 Montant total : <strong className="text-blue-600">{Number(devis.montant_ttc).toFixed(2)} EUR TTC</strong>
               </p>
               <div className="flex gap-3 flex-wrap">
-                <button
-                  onClick={() => setStep('sign')}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
-                >
+                <button onClick={() => setStep('sign')} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
                   Accepter et signer
                 </button>
-                <button
-                  onClick={() => setStep('refuse')}
-                  className="flex-1 bg-red-50 text-red-500 py-3 rounded-lg font-semibold hover:bg-red-100"
-                >
+                <button onClick={() => setStep('refuse')} className="flex-1 bg-red-50 text-red-500 py-3 rounded-lg font-semibold hover:bg-red-100">
                   Refuser le devis
                 </button>
               </div>
@@ -258,20 +223,12 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
               <div className="border-2 border-dashed border-gray-200 rounded-lg overflow-hidden bg-white">
                 <SignatureCanvas
                   ref={sigCanvas}
-                  canvasProps={{
-                    width: 500,
-                    height: 150,
-                    className: 'w-full',
-                    style: { touchAction: 'none' }
-                  }}
+                  canvasProps={{ width: 500, height: 150, className: 'w-full', style: { touchAction: 'none' } }}
                   backgroundColor="white"
                   penColor="#1e293b"
                 />
               </div>
-              <button
-                onClick={() => sigCanvas.current?.clear()}
-                className="text-xs text-gray-400 hover:text-gray-600 mt-1"
-              >
+              <button onClick={() => sigCanvas.current?.clear()} className="text-xs text-gray-400 hover:text-gray-600 mt-1">
                 Effacer la signature
               </button>
             </div>
@@ -290,10 +247,7 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
               >
                 {signing ? 'Signature en cours...' : 'Valider ma signature'}
               </button>
-              <button
-                onClick={() => setStep('view')}
-                className="text-gray-400 px-4 hover:text-gray-600 text-sm"
-              >
+              <button onClick={() => setStep('view')} className="text-gray-400 px-4 hover:text-gray-600 text-sm">
                 Retour
               </button>
             </div>
@@ -308,16 +262,10 @@ export default function SignerDevis({ params }: { params: Promise<{ id: string }
             <h3 className="font-semibold text-gray-900 mb-2">Confirmer le refus ?</h3>
             <p className="text-sm text-gray-500 mb-6">Le prestataire sera notifie de votre decision.</p>
             <div className="flex gap-3">
-              <button
-                onClick={handleRefuse}
-                className="flex-1 bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600"
-              >
+              <button onClick={handleRefuse} className="flex-1 bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600">
                 Confirmer le refus
               </button>
-              <button
-                onClick={() => setStep('view')}
-                className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-lg font-semibold hover:bg-gray-200"
-              >
+              <button onClick={() => setStep('view')} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-lg font-semibold hover:bg-gray-200">
                 Annuler
               </button>
             </div>
