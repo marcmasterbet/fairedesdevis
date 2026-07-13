@@ -60,7 +60,7 @@ export default function Home() {
             <span className="text-blue-600">en 60 secondes</span>
           </h2>
           <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-            L'IA génère vos devis, vos clients signent en ligne, vous facturez en 1 clic. 
+            L'IA génère vos devis, vos clients signent en ligne, vous facturez en 1 clic.
             Conçu pour les artisans, plombiers, électriciens, menuisiers et tous les indépendants.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -91,7 +91,7 @@ export default function Home() {
             <p className="text-blue-200 text-sm mt-1">Le premier mois</p>
           </div>
           <div>
-            <p className="text-3xl font-bold">Legal</p>
+            <p className="text-3xl font-bold">Légal</p>
             <p className="text-blue-200 text-sm mt-1">Signature électronique</p>
           </div>
         </div>
@@ -106,18 +106,13 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {etapes.map((e, i) => (
-              <div key={i} className="relative">
-                {i < etapes.length - 1 && (
-                  <div className="hidden lg:block absolute top-8 left-full w-full h-0.5 bg-blue-200 z-0" style={{width:'calc(100% - 2rem)', left:'calc(50% + 2rem)'}} />
-                )}
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition relative z-10">
-                  <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-lg font-bold mb-4">
-                    {e.num}
-                  </div>
-                  <p className="text-2xl mb-3">{e.icon}</p>
-                  <h3 className="font-bold text-gray-900 mb-2">{e.titre}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{e.desc}</p>
+              <div key={i} className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition">
+                <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-lg font-bold mb-4">
+                  {e.num}
                 </div>
+                <p className="text-2xl mb-3">{e.icon}</p>
+                <h3 className="font-bold text-gray-900 mb-2">{e.titre}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{e.desc}</p>
               </div>
             ))}
           </div>
@@ -150,63 +145,35 @@ export default function Home() {
 
       {/* Tarif */}
       <section id="tarif" className="py-20 px-6 bg-gray-50">
-        <div className="max-w-2xl mx-auto text-center">
+        <div className="max-w-lg mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Un tarif simple et transparent</h2>
           <p className="text-gray-500 text-lg mb-12">Pas de surprise, pas de frais cachés</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* Gratuit */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Gratuit</h3>
-              <p className="text-4xl font-bold text-gray-900 mb-1">0€</p>
-              <p className="text-gray-400 text-sm mb-6">Premier mois offert</p>
-              <ul className="space-y-3 text-left mb-8">
-                {[
-                  'Toutes les fonctionnalités incluses',
-                  'Devis illimités',
-                  'Signature électronique',
-                  'Facturation',
-                  'Catalogue et clients illimités',
-                  'Sans carte bancaire',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="text-green-500 font-bold">✓</span> {item}
-                  </li>
-                ))}
-              </ul>
-              <a href="/register" className="block text-center bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">
-                Commencer gratuitement
-              </a>
+          <div className="bg-blue-600 rounded-2xl p-8 relative">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-sm font-bold px-6 py-2 rounded-full whitespace-nowrap">
+              🎉 1er mois gratuit — sans carte bancaire
             </div>
-
-            {/* Pro */}
-            <div className="bg-blue-600 rounded-2xl p-8 border border-blue-600 relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-bold px-4 py-1 rounded-full">
-                Après le mois gratuit
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">Pro</h3>
-              <p className="text-4xl font-bold text-white mb-1">19,90€</p>
-              <p className="text-blue-200 text-sm mb-6">par mois · résiliation libre</p>
-              <ul className="space-y-3 text-left mb-8">
-                {[
-                  'Toutes les fonctionnalités incluses',
-                  'Devis illimités',
-                  'Signature électronique légale',
-                  'Facturation en 1 clic',
-                  'Catalogue et clients illimités',
-                  'Support prioritaire',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-white">
-                    <span className="text-blue-200 font-bold">✓</span> {item}
-                  </li>
-                ))}
-              </ul>
-              <a href="/register" className="block text-center bg-white text-blue-600 py-3 rounded-xl font-bold hover:bg-blue-50 transition">
-                Essayer 1 mois gratuit →
-              </a>
-            </div>
+            <h3 className="text-2xl font-bold text-white mb-2 mt-4">Plan unique</h3>
+            <p className="text-6xl font-bold text-white mb-1">19,90€</p>
+            <p className="text-blue-200 text-sm mb-8">par mois · résiliation libre</p>
+            <ul className="space-y-3 text-left mb-8">
+              {[
+                'Devis illimités',
+                'Signature électronique légale',
+                'Facturation en 1 clic',
+                'Catalogue et clients illimités',
+                'Emails automatiques au client',
+                'Support prioritaire',
+              ].map((item, i) => (
+                <li key={i} className="flex items-center gap-3 text-sm text-white">
+                  <span className="text-green-300 font-bold text-base">✓</span> {item}
+                </li>
+              ))}
+            </ul>
+            <a href="/register" className="block text-center bg-white text-blue-600 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition">
+              Commencer — 1 mois gratuit →
+            </a>
+            <p className="text-blue-300 text-xs mt-4">Résiliation possible à tout moment · Aucun engagement</p>
           </div>
-          <p className="text-gray-400 text-sm mt-8">Résiliation possible à tout moment · Aucun engagement</p>
         </div>
       </section>
 
