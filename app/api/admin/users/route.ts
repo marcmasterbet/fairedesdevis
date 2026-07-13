@@ -24,6 +24,7 @@ export async function GET() {
 
       const bannedUntil = (u as any).banned_until || null
       const suspendu = bannedUntil && bannedUntil !== 'none' && new Date(bannedUntil) > new Date()
+      const actifManuellement = u.user_metadata?.actif_manuellement === true
 
       return {
         ...u,
@@ -33,7 +34,8 @@ export async function GET() {
         joursRestants,
         essaiActif,
         banned_until: bannedUntil,
-        suspendu
+        suspendu,
+        actifManuellement
       }
     })
 
@@ -47,8 +49,9 @@ export async function GET() {
         totalFactures: factures?.length || 0,
         totalMontant,
         essaisActifs: usersAvecStats.filter(u => u.essaiActif && !u.suspendu).length,
-        essaisExpires: usersAvecStats.filter(u => !u.essaiActif && !u.suspendu).length,
-        suspendus: usersAvecStats.filter(u => u.suspendu).length
+        essaisExpires: usersAvecStats.filter(u => !u.essaiActif && !u.suspendu && !u.actifManuellement).length,
+        suspendus: usersAvecStats.filter(u => u.suspendu).length,
+        vip: usersAvecStats.filter(u => u.actifManuellement).length
       }
     })
   } catch (error) {

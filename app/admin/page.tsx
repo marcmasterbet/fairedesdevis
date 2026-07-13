@@ -11,6 +11,7 @@ interface Utilisateur {
   created_at: string
   banned_until?: string
   suspendu?: boolean
+  actifManuellement?: boolean
   user_metadata: {
     nom: string
     metier: string
@@ -28,7 +29,7 @@ interface Utilisateur {
 export default function Admin() {
   const [users, setUsers] = useState<Utilisateur[]>([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ totalUsers: 0, totalDevis: 0, totalFactures: 0, totalMontant: 0, essaisActifs: 0, essaisExpires: 0, suspendus: 0 })
+  const [stats, setStats] = useState({ totalUsers: 0, totalDevis: 0, totalFactures: 0, totalMontant: 0, essaisActifs: 0, essaisExpires: 0, suspendus: 0, vip: 0 })
   const [search, setSearch] = useState('')
   const [filtre, setFiltre] = useState('tous')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -98,9 +99,10 @@ export default function Admin() {
       u.user_metadata?.nom?.toLowerCase().includes(search.toLowerCase()) ||
       u.user_metadata?.metier?.toLowerCase().includes(search.toLowerCase())
     const matchFiltre = filtre === 'tous' ||
-      (filtre === 'actif' && u.essaiActif && !u.suspendu) ||
-      (filtre === 'expire' && !u.essaiActif && !u.suspendu) ||
-      (filtre === 'suspendu' && u.suspendu)
+      (filtre === 'actif' && u.essaiActif && !u.suspendu && !u.actifManuellement) ||
+      (filtre === 'expire' && !u.essaiActif && !u.suspendu && !u.actifManuellement) ||
+      (filtre === 'suspendu' && u.suspendu) ||
+      (filtre === 'vip' && u.actifManuellement)
     return matchSearch && matchFiltre
   })
 
@@ -150,7 +152,7 @@ export default function Admin() {
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Dashboard Admin</h2>
 
         {/* Stats globales */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p className="text-2xl font-bold text-blue-600">{stats.totalUsers}</p>
             <p className="text-xs text-gray-500 mt-1">Utilisateurs</p>
@@ -166,6 +168,10 @@ export default function Admin() {
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p className="text-2xl font-bold text-red-500">{stats.suspendus}</p>
             <p className="text-xs text-gray-500 mt-1">Suspendus</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p className="text-2xl font-bold text-purple-600">{stats.vip}</p>
+            <p className="text-xs text-gray-500 mt-1">VIP offerts</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p className="text-2xl font-bold text-gray-900">{stats.totalDevis}</p>
@@ -187,6 +193,7 @@ export default function Admin() {
             { key: 'tous', label: 'Tous' },
             { key: 'actif', label: '🟢 Essai actif' },
             { key: 'expire', label: '🟠 Essai expiré' },
+            { key: 'vip', label: '⭐ VIP' },
             { key: 'suspendu', label: '🔒 Suspendu' },
           ].map(f => (
             <button
@@ -216,15 +223,16 @@ export default function Admin() {
           </div>
           <div className="divide-y divide-gray-100">
             {filtered.map(u => (
-              <div key={u.id} className={'px-6 py-4 ' + (u.suspendu ? 'bg-red-50' : '')}>
+              <div key={u.id} className={'px-6 py-4 ' + (u.suspendu ? 'bg-red-50' : u.actifManuellement ? 'bg-purple-50' : '')}>
                 <div className="flex justify-between items-start flex-wrap gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-semibold text-gray-900">{u.user_metadata?.nom || '—'}</p>
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{u.user_metadata?.metier || '—'}</span>
                       {u.suspendu && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">🔒 Suspendu</span>}
-                      {!u.suspendu && u.essaiActif && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">🟢 Essai — {u.joursRestants} jours restants</span>}
-                      {!u.suspendu && !u.essaiActif && <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">🟠 Essai expiré — J+{u.joursDepuisInscription}</span>}
+                      {u.actifManuellement && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">⭐ VIP</span>}
+                      {!u.suspendu && !u.actifManuellement && u.essaiActif && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">🟢 Essai — {u.joursRestants} jours restants</span>}
+                      {!u.suspendu && !u.actifManuellement && !u.essaiActif && <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">🟠 Essai expiré — J+{u.joursDepuisInscription}</span>}
                     </div>
                     <p className="text-sm text-gray-500">{u.email}</p>
                     {u.user_metadata?.siret && <p className="text-xs text-gray-400 mt-1">SIRET : {u.user_metadata.siret}</p>}
@@ -246,6 +254,23 @@ export default function Admin() {
                   >
                     ✉️ Email
                   </button>
+                  {u.actifManuellement ? (
+                    <button
+                      onClick={() => handleAction('desactiver_vip', u)}
+                      disabled={actionLoading === u.id + 'desactiver_vip'}
+                      className="bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-purple-100 disabled:opacity-50"
+                    >
+                      {actionLoading === u.id + 'desactiver_vip' ? '...' : '⭐ Retirer VIP'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleAction('activer_vip', u)}
+                      disabled={actionLoading === u.id + 'activer_vip'}
+                      className="bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-purple-100 disabled:opacity-50"
+                    >
+                      {actionLoading === u.id + 'activer_vip' ? '...' : '⭐ Offrir accès'}
+                    </button>
+                  )}
                   {u.suspendu ? (
                     <button
                       onClick={() => handleAction('reactiver', u)}

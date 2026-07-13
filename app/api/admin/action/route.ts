@@ -32,6 +32,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
+    if (action === 'activer_vip') {
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: { actif_manuellement: true }
+      })
+      return NextResponse.json({ success: true })
+    }
+
+    if (action === 'desactiver_vip') {
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: { actif_manuellement: false }
+      })
+      return NextResponse.json({ success: true })
+    }
+
     if (action === 'email') {
       await resend.emails.send({
         from: 'FaireDesDevis <noreply@fairedesdevis.fr>',
