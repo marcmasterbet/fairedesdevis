@@ -6,7 +6,7 @@ interface NavBarProps {
 
 export default function NavBar({ active }: NavBarProps) {
   const items = [
-    { id: 'dashboard', href: '/dashboard', icon: '🏠', label: 'Accueil' },
+    { id: 'dashboard', href: '/dashboard', icon: '🏠', label: 'Dashboard' },
     { id: 'devis', href: '/dashboard/devis', icon: '📄', label: 'Devis' },
     { id: 'clients', href: '/dashboard/clients', icon: '👥', label: 'Clients' },
     { id: 'catalogue', href: '/dashboard/catalogue', icon: '📦', label: 'Catalogue' },
