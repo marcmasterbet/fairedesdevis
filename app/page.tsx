@@ -1,9 +1,19 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
   const [faqOpen, setFaqOpen] = useState<number | null>(null)
+  const router = useRouter()
 
+  useEffect(() => {
+    const check = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) router.push('/dashboard')
+    }
+    check()
+  }, [router])
   const faqs = [
     { q: "Est-ce vraiment gratuit le premier mois ?", a: "Oui, 1 mois complet sans carte bancaire. Vous accédez à toutes les fonctionnalités sans limitation. À la fin du mois, vous choisissez de continuer à 19,90€/mois ou non." },
     { q: "Mes devis sont-ils vraiment professionnels ?", a: "Oui. L'IA génère des devis avec votre logo, votre signature, vos coordonnées bancaires, les conditions de paiement et les mentions légales. Vos clients reçoivent un document signé électroniquement." },
