@@ -14,8 +14,9 @@ export default function Home() {
     }
     check()
   }, [router])
+
   const faqs = [
-    { q: "Est-ce vraiment gratuit le premier mois ?", a: "Oui, 1 mois complet sans carte bancaire. Vous accédez à toutes les fonctionnalités sans limitation. À la fin du mois, vous choisissez de continuer à 19,90€/mois ou non." },
+    { q: "Est-ce vraiment gratuit le premier mois ?", a: "Oui, 1 mois complet offert. Vous accédez à toutes les fonctionnalités sans limitation. Une carte bancaire est requise pour démarrer — aucun prélèvement pendant 30 jours. À la fin du mois, vous choisissez de continuer à 19,90€/mois ou vous résiliez." },
     { q: "Mes devis sont-ils vraiment professionnels ?", a: "Oui. L'IA génère des devis avec votre logo, votre signature, vos coordonnées bancaires, les conditions de paiement et les mentions légales. Vos clients reçoivent un document signé électroniquement." },
     { q: "La signature électronique a-t-elle une valeur légale ?", a: "Oui. La signature électronique avec mention 'Bon pour accord', horodatage et adresse IP a valeur légale en France conformément au règlement eIDAS." },
     { q: "Puis-je importer mon catalogue de produits ?", a: "Oui. Importez votre catalogue depuis un fichier CSV ou TXT. L'IA extrait automatiquement vos produits, références et prix." },
@@ -42,7 +43,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white">
 
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold text-blue-600">FaireDesDevis</h1>
@@ -59,11 +59,10 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero */}
       <section className="py-20 px-6 text-center bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-4xl mx-auto">
           <div className="inline-block bg-blue-100 text-blue-700 text-sm font-semibold px-4 py-2 rounded-full mb-6">
-            🎉 1 mois gratuit — sans carte bancaire
+            🎉 1 mois gratuit — carte bancaire requise, aucun prélèvement pendant 30 jours
           </div>
           <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Votre devis professionnel<br/>
@@ -81,11 +80,10 @@ export default function Home() {
               Voir comment ça marche
             </a>
           </div>
-          <p className="text-gray-400 text-sm">1 mois gratuit · Sans carte bancaire · Résiliation en 1 clic</p>
+          <p className="text-gray-400 text-sm">1 mois gratuit · Carte bancaire requise · Résiliation en 1 clic</p>
         </div>
       </section>
 
-      {/* Chiffres */}
       <section className="py-12 px-6 bg-blue-600">
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
           <div>
@@ -107,7 +105,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Comment ça marche */}
       <section id="comment-ca-marche" className="py-20 px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -134,7 +131,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Fonctionnalites */}
       <section id="fonctionnalites" className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -153,14 +149,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Tarif */}
       <section id="tarif" className="py-20 px-6 bg-gray-50">
         <div className="max-w-lg mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Un tarif simple et transparent</h2>
           <p className="text-gray-500 text-lg mb-12">Pas de surprise, pas de frais cachés</p>
           <div className="bg-blue-600 rounded-2xl p-8 relative">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-sm font-bold px-6 py-2 rounded-full whitespace-nowrap">
-              🎉 1er mois gratuit — sans carte bancaire
+              🎉 1er mois gratuit
             </div>
             <h3 className="text-2xl font-bold text-white mb-2 mt-4">Plan unique</h3>
             <p className="text-6xl font-bold text-white mb-1">19,90€</p>
@@ -182,12 +177,11 @@ export default function Home() {
             <a href="/register" className="block text-center bg-white text-blue-600 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition">
               Commencer — 1 mois gratuit →
             </a>
-            <p className="text-blue-300 text-xs mt-4">Résiliation possible à tout moment · Aucun engagement</p>
+            <p className="text-blue-300 text-xs mt-4">Résiliation possible à tout moment · Carte bancaire requise</p>
           </div>
         </div>
       </section>
 
-      {/* FAQ */}
       <section id="faq" className="py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
@@ -214,7 +208,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA final */}
       <section className="py-20 px-6 bg-blue-600 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Prêt à gagner du temps ?</h2>
@@ -222,11 +215,10 @@ export default function Home() {
           <a href="/register" className="inline-block bg-white text-blue-600 px-10 py-4 rounded-xl text-lg font-bold hover:bg-blue-50 transition">
             Commencer — 1 mois gratuit →
           </a>
-          <p className="text-blue-300 text-sm mt-4">Sans carte bancaire · Résiliation libre</p>
+          <p className="text-blue-300 text-sm mt-4">Carte bancaire requise · Résiliation libre</p>
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="py-12 px-6 bg-gray-900">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">

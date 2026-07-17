@@ -100,7 +100,7 @@ export default function Register() {
       <div className="bg-white rounded-2xl shadow p-8 w-full max-w-md">
         <a href="/" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
         <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Créer votre compte</h2>
-        <p className="text-gray-500 text-sm mb-6">1 devis gratuit — sans carte bancaire</p>
+        <p className="text-gray-500 text-sm mb-6">1 devis gratuit — carte bancaire requise, aucun prélèvement pendant 30 jours</p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
