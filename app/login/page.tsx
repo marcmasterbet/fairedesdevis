@@ -16,9 +16,26 @@ export default function Login() {
     if (!email || !password) { setError('Veuillez remplir tous les champs.'); return }
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) { setError('Email ou mot de passe incorrect.'); setLoading(false) }
-    else router.push('/dashboard')
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        console.log('Erreur login:', error.message)
+        if (error.message.includes('Email not confirmed')) {
+          setError('Veuillez confirmer votre email avant de vous connecter.')
+        } else if (error.message.includes('Invalid login credentials')) {
+          setError('Email ou mot de passe incorrect.')
+        } else {
+          setError('Erreur : ' + error.message)
+        }
+        setLoading(false)
+      } else {
+        router.push('/dashboard')
+      }
+    } catch (e) {
+      console.log('Erreur inattendue:', e)
+      setError('Erreur de connexion inattendue. Réessayez.')
+      setLoading(false)
+    }
   }
 
   const handleForgotPassword = async () => {
