@@ -33,15 +33,19 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'activer_vip') {
+      const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId)
+      const existingMeta = userData?.user?.user_metadata || {}
       await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: { actif_manuellement: true }
+        user_metadata: { ...existingMeta, actif_manuellement: true }
       })
       return NextResponse.json({ success: true })
     }
 
     if (action === 'desactiver_vip') {
+      const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId)
+      const existingMeta = userData?.user?.user_metadata || {}
       await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: { actif_manuellement: false }
+        user_metadata: { ...existingMeta, actif_manuellement: false }
       })
       return NextResponse.json({ success: true })
     }
