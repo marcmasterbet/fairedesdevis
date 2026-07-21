@@ -35,6 +35,8 @@ interface Parrain {
   description: string
   created_at: string
   statut: string
+  iban?: string
+  titulaire?: string
 }
 
 export default function Admin() {
@@ -121,7 +123,7 @@ export default function Admin() {
       body: JSON.stringify({
         action: 'email',
         email: parrain.email,
-        message: `Bonjour ${parrain.nom},\n\nVotre demande a été approuvée — bienvenue dans le programme apporteurs d'affaires FaireDesDevis !\n\nVotre lien personnel :\nhttps://fairedesdevis.fr/?ref=${parrain.code}\n\nChaque artisan qui s'abonne via votre lien vous rapporte 4€/mois tant qu'il reste abonné.\n\nConnectez-vous sur fairedesdevis.fr pour suivre vos clients apportés et vos gains directement depuis votre dashboard.\n\nBonne chance !\n\nMarc Bretzner\nFaireDesDevis`
+        message: `Bonjour ${parrain.nom},\n\nVotre demande a été approuvée — bienvenue dans le programme apporteurs d'affaires FaireDesDevis !\n\nVotre lien personnel :\nhttps://fairedesdevis.fr/?ref=${parrain.code}\n\nChaque artisan qui s'abonne via votre lien vous rapporte 4€/mois tant qu'il reste abonné.\n\nConnectez-vous sur fairedesdevis.fr pour suivre vos clients apportés et vos gains directement depuis votre dashboard. Pensez à renseigner votre RIB dans votre espace pour recevoir vos virements.\n\nBonne chance !\n\nMarc Bretzner\nFaireDesDevis`
       })
     })
     chargerParrains()
@@ -154,6 +156,7 @@ export default function Admin() {
 
   const parrainEnAttente = parrains.filter(a => !a.statut || a.statut === 'en_attente')
   const parrainApprouves = parrains.filter(a => a.statut === 'approuve')
+  const parrainsSansRib = parrainApprouves.filter(a => !a.iban).length
 
   if (loading) return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -249,9 +252,9 @@ export default function Admin() {
             className={'px-6 py-2 rounded-lg text-sm font-semibold transition relative ' + (onglet === 'parrains' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50')}
           >
             🤝 Apporteurs ({parrains.length})
-            {parrainEnAttente.length > 0 && (
+            {(parrainEnAttente.length > 0 || parrainsSansRib > 0) && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {parrainEnAttente.length}
+                {parrainEnAttente.length + parrainsSansRib}
               </span>
             )}
           </button>
@@ -388,7 +391,12 @@ export default function Admin() {
             )}
 
             <div>
-              <h3 className="font-bold text-gray-900 mb-3">✅ Apporteurs approuvés ({parrainApprouves.length})</h3>
+              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                ✅ Apporteurs approuvés ({parrainApprouves.length})
+                {parrainsSansRib > 0 && (
+                  <span className="bg-amber-400 text-amber-900 text-xs px-2 py-0.5 rounded-full">{parrainsSansRib} sans RIB</span>
+                )}
+              </h3>
               {parrainApprouves.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                   <p className="text-gray-400 text-sm">Aucun apporteur approuvé pour l'instant</p>
@@ -410,6 +418,21 @@ export default function Admin() {
                             <p className="text-xs text-gray-400 mt-1">Depuis le {new Date(a.created_at).toLocaleDateString('fr-FR')}</p>
                           </div>
                         </div>
+
+                        {/* RIB */}
+                        {a.iban ? (
+                          <div className="mt-3 bg-emerald-50 border border-emerald-100 rounded-lg px-4 py-3">
+                            <p className="text-xs font-semibold text-emerald-700 mb-1">🏦 Coordonnées bancaires</p>
+                            <p className="text-xs text-gray-700">Titulaire : <span className="font-semibold">{a.titulaire || '—'}</span></p>
+                            <p className="text-xs text-gray-700 font-mono mt-0.5">{a.iban}</p>
+                          </div>
+                        ) : (
+                          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                            <p className="text-xs font-semibold text-amber-700">⚠️ RIB non renseigné — virement impossible</p>
+                            <p className="text-xs text-amber-600 mt-0.5">L'apporteur doit renseigner son IBAN depuis son dashboard.</p>
+                          </div>
+                        )}
+
                         <div className="flex gap-2 mt-3">
                           <button onClick={() => handleSupprimerParrain(a)} className="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100">
                             🗑️ Supprimer
