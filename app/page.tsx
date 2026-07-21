@@ -9,6 +9,11 @@ export default function Home() {
 
   useEffect(() => {
     const check = async () => {
+      const params = new URLSearchParams(window.location.search)
+      const ref = params.get('ref')
+      if (ref) {
+        document.cookie = `fairedesdevis_ref=${ref};max-age=2592000;path=/`
+      }
       const { data: { user } } = await supabase.auth.getUser()
       if (user) router.push('/dashboard')
     }
@@ -43,6 +48,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white">
 
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold text-blue-600">FaireDesDevis</h1>
@@ -51,6 +57,9 @@ export default function Home() {
             <a href="#fonctionnalites" className="text-gray-600 hover:text-blue-600 text-sm">Fonctionnalités</a>
             <a href="#tarif" className="text-gray-600 hover:text-blue-600 text-sm">Tarif</a>
             <a href="#faq" className="text-gray-600 hover:text-blue-600 text-sm">FAQ</a>
+            <a href="/affiliation" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 border border-emerald-200 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition">
+              🤝 Programme partenaires
+            </a>
           </nav>
           <div className="flex items-center gap-3">
             <a href="/login" className="text-gray-600 hover:text-blue-600 text-sm">Connexion</a>
@@ -59,6 +68,20 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Bandeau partenaires */}
+      <div className="bg-emerald-600 px-6 py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+          <p className="text-white text-sm">
+            <span className="font-semibold">💼 Vous êtes expert-comptable, formateur ou fournisseur ?</span>
+            {' '}Gagnez une commission récurrente en recommandant FaireDesDevis à vos clients artisans.
+          </p>
+          <a href="/affiliation" className="flex-shrink-0 bg-white text-emerald-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-emerald-50 transition">
+            Découvrir le programme →
+          </a>
+        </div>
+      </div>
+
+      {/* Hero */}
       <section className="py-20 px-6 text-center bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-4xl mx-auto">
           <div className="inline-block bg-blue-100 text-blue-700 text-sm font-semibold px-4 py-2 rounded-full mb-6">
@@ -84,6 +107,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Stats */}
       <section className="py-12 px-6 bg-blue-600">
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
           <div>
@@ -105,6 +129,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Comment ca marche */}
       <section id="comment-ca-marche" className="py-20 px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -131,6 +156,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Fonctionnalités */}
       <section id="fonctionnalites" className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -149,6 +175,54 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Bloc programme partenaires */}
+      <section className="py-20 px-6 bg-emerald-50 border-y border-emerald-100">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center gap-12">
+            <div className="flex-1">
+              <div className="inline-block bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-full mb-4">
+                🤝 Programme Partenaires
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Vous connaissez des artisans ?<br/>
+                <span className="text-emerald-600">Gagnez avec eux.</span>
+              </h2>
+              <p className="text-gray-500 text-lg mb-6 leading-relaxed">
+                Recommandez FaireDesDevis à vos clients, votre réseau ou votre audience — et touchez <strong className="text-gray-700">4€/mois</strong> par artisan actif. Sans limite, sans engagement.
+              </p>
+              <ul className="space-y-3 mb-8">
+                {[
+                  '✅ Commission récurrente tant que le client est abonné',
+                  '✅ Dashboard en temps réel — clics, inscriptions, gains',
+                  '✅ Virement mensuel automatique',
+                  '✅ Idéal pour experts-comptables, formateurs, fournisseurs',
+                ].map((item, i) => (
+                  <li key={i} className="text-gray-600 text-sm">{item}</li>
+                ))}
+              </ul>
+              <a href="/affiliation" className="inline-block bg-emerald-600 text-white px-8 py-4 rounded-xl text-lg font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-100">
+                Rejoindre le programme →
+              </a>
+            </div>
+            <div className="flex-shrink-0 grid grid-cols-2 gap-4 w-full md:w-72">
+              {[
+                { clients: 5, gain: '20€', label: '/mois' },
+                { clients: 10, gain: '40€', label: '/mois' },
+                { clients: 25, gain: '100€', label: '/mois' },
+                { clients: 50, gain: '200€', label: '/mois' },
+              ].map((s, i) => (
+                <div key={i} className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm text-center">
+                  <p className="text-2xl font-bold text-emerald-600">{s.gain}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
+                  <p className="text-xs text-gray-500 mt-2">{s.clients} clients</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Tarif */}
       <section id="tarif" className="py-20 px-6 bg-gray-50">
         <div className="max-w-lg mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Un tarif simple et transparent</h2>
@@ -182,6 +256,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* FAQ */}
       <section id="faq" className="py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
@@ -208,6 +283,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* CTA final */}
       <section className="py-20 px-6 bg-blue-600 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Prêt à gagner du temps ?</h2>
@@ -219,6 +295,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Footer */}
       <footer className="py-12 px-6 bg-gray-900">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -226,7 +303,8 @@ export default function Home() {
               <h3 className="text-white font-bold text-lg mb-1">FaireDesDevis</h3>
               <p className="text-gray-400 text-sm">Devis professionnels pour artisans</p>
             </div>
-            <div className="flex gap-6 text-sm text-gray-400">
+            <div className="flex gap-6 text-sm text-gray-400 flex-wrap justify-center">
+              <a href="/affiliation" className="hover:text-white transition font-semibold text-emerald-400">Programme affiliés</a>
               <a href="/legal/cgu" className="hover:text-white transition">CGU</a>
               <a href="/legal/confidentialite" className="hover:text-white transition">Confidentialité</a>
               <a href="/legal/mentions" className="hover:text-white transition">Mentions légales</a>

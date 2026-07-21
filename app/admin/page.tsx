@@ -26,7 +26,7 @@ interface Utilisateur {
   essaiActif?: boolean
 }
 
-interface Affilie {
+interface Parrain {
   id: string
   nom: string
   email: string
@@ -39,9 +39,9 @@ interface Affilie {
 
 export default function Admin() {
   const [users, setUsers] = useState<Utilisateur[]>([])
-  const [affilies, setAffilies] = useState<Affilie[]>([])
+  const [parrains, setParrains] = useState<Parrain[]>([])
   const [loading, setLoading] = useState(true)
-  const [onglet, setOnglet] = useState<'users' | 'affilies'>('users')
+  const [onglet, setOnglet] = useState<'users' | 'parrains'>('users')
   const [stats, setStats] = useState({ totalUsers: 0, totalDevis: 0, totalFactures: 0, totalMontant: 0, essaisActifs: 0, essaisExpires: 0, suspendus: 0, vip: 0 })
   const [search, setSearch] = useState('')
   const [filtre, setFiltre] = useState('tous')
@@ -56,7 +56,7 @@ export default function Admin() {
       if (!user) { router.push('/login'); return }
       if (user.email !== ADMIN_EMAIL) { router.push('/'); return }
       chargerUsers()
-      chargerAffilies()
+      chargerParrains()
     }
     init()
   }, [router])
@@ -70,9 +70,9 @@ export default function Admin() {
     setLoading(false)
   }
 
-  const chargerAffilies = async () => {
-    const { data } = await supabase.from('affilies').select('*').order('created_at', { ascending: false })
-    setAffilies(data || [])
+  const chargerParrains = async () => {
+    const { data } = await supabase.from('parrains').select('*').order('created_at', { ascending: false })
+    setParrains(data || [])
   }
 
   const handleAction = async (action: string, user: Utilisateur) => {
@@ -113,32 +113,31 @@ export default function Admin() {
     setActionLoading(null)
   }
 
-  const handleApprouverAffilie = async (affilie: Affilie) => {
-    await supabase.from('affilies').update({ statut: 'approuve' }).eq('id', affilie.id)
-    // Envoyer email avec le lien
+  const handleApprouverParrain = async (parrain: Parrain) => {
+    await supabase.from('parrains').update({ statut: 'approuve' }).eq('id', parrain.id)
     await fetch('/api/admin/action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'email',
-        email: affilie.email,
-        message: `Bonjour ${affilie.nom},\n\nVotre demande d'affiliation FaireDesDevis a été approuvée !\n\nVotre lien d'affiliation unique :\nhttps://fairedesdevis.fr/?ref=${affilie.code}\n\nVous toucherez 4€/mois pour chaque artisan qui s'abonne via votre lien.\n\nBonne chance !\n\nMarc Bretzner\nFaireDesDevis`
+        email: parrain.email,
+        message: `Bonjour ${parrain.nom},\n\nVotre demande a été approuvée — bienvenue dans le programme apporteurs d'affaires FaireDesDevis !\n\nVotre lien personnel :\nhttps://fairedesdevis.fr/?ref=${parrain.code}\n\nChaque artisan qui s'abonne via votre lien vous rapporte 4€/mois tant qu'il reste abonné.\n\nConnectez-vous sur fairedesdevis.fr pour suivre vos clients apportés et vos gains directement depuis votre dashboard.\n\nBonne chance !\n\nMarc Bretzner\nFaireDesDevis`
       })
     })
-    chargerAffilies()
-    alert('Affilié approuvé et email envoyé avec son lien !')
+    chargerParrains()
+    alert('Apporteur approuvé et email envoyé !')
   }
 
-  const handleRefuserAffilie = async (affilie: Affilie) => {
-    if (!confirm('Refuser ' + affilie.nom + ' ?')) return
-    await supabase.from('affilies').update({ statut: 'refuse' }).eq('id', affilie.id)
-    chargerAffilies()
+  const handleRefuserParrain = async (parrain: Parrain) => {
+    if (!confirm('Refuser ' + parrain.nom + ' ?')) return
+    await supabase.from('parrains').update({ statut: 'refuse' }).eq('id', parrain.id)
+    chargerParrains()
   }
 
-  const handleSupprimerAffilie = async (affilie: Affilie) => {
-    if (!confirm('Supprimer ' + affilie.nom + ' ?')) return
-    await supabase.from('affilies').delete().eq('id', affilie.id)
-    chargerAffilies()
+  const handleSupprimerParrain = async (parrain: Parrain) => {
+    if (!confirm('Supprimer ' + parrain.nom + ' ?')) return
+    await supabase.from('parrains').delete().eq('id', parrain.id)
+    chargerParrains()
   }
 
   const filtered = users.filter(u => {
@@ -153,8 +152,8 @@ export default function Admin() {
     return matchSearch && matchFiltre
   })
 
-  const affiliesEnAttente = affilies.filter(a => !a.statut || a.statut === 'en_attente')
-  const affiliesApprouves = affilies.filter(a => a.statut === 'approuve')
+  const parrainEnAttente = parrains.filter(a => !a.statut || a.statut === 'en_attente')
+  const parrainApprouves = parrains.filter(a => a.statut === 'approuve')
 
   if (loading) return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -246,13 +245,13 @@ export default function Admin() {
             👥 Utilisateurs ({users.length})
           </button>
           <button
-            onClick={() => setOnglet('affilies')}
-            className={'px-6 py-2 rounded-lg text-sm font-semibold transition relative ' + (onglet === 'affilies' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50')}
+            onClick={() => setOnglet('parrains')}
+            className={'px-6 py-2 rounded-lg text-sm font-semibold transition relative ' + (onglet === 'parrains' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50')}
           >
-            🤝 Affiliés ({affilies.length})
-            {affiliesEnAttente.length > 0 && (
+            🤝 Apporteurs ({parrains.length})
+            {parrainEnAttente.length > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {affiliesEnAttente.length}
+                {parrainEnAttente.length}
               </span>
             )}
           </button>
@@ -347,37 +346,37 @@ export default function Admin() {
           </>
         )}
 
-        {/* Onglet Affiliés */}
-        {onglet === 'affilies' && (
+        {/* Onglet Apporteurs */}
+        {onglet === 'parrains' && (
           <div>
-            {affiliesEnAttente.length > 0 && (
+            {parrainEnAttente.length > 0 && (
               <div className="mb-6">
                 <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                   ⏳ En attente d'approbation
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{affiliesEnAttente.length}</span>
+                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{parrainEnAttente.length}</span>
                 </h3>
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                   <div className="divide-y divide-gray-100">
-                    {affiliesEnAttente.map(a => (
+                    {parrainEnAttente.map(a => (
                       <div key={a.id} className="px-6 py-4 bg-amber-50">
                         <div className="flex justify-between items-start flex-wrap gap-3">
                           <div className="flex-1">
                             <p className="font-semibold text-gray-900">{a.nom}</p>
                             <p className="text-sm text-gray-500">{a.email}</p>
-                            {a.activite && <p className="text-xs text-gray-400 mt-1">Société : {a.activite}</p>}
+                            {a.activite && <p className="text-xs text-gray-400 mt-1">Activité : {a.activite}</p>}
                             {a.description && <p className="text-xs text-gray-500 mt-1 italic">"{a.description}"</p>}
                             <p className="text-xs text-gray-400 mt-1">Inscrit le {new Date(a.created_at).toLocaleDateString('fr-FR')}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-gray-400 mb-2">Code : <span className="font-mono font-bold text-blue-600">{a.code}</span></p>
-                            <p className="text-xs text-gray-400 mb-2">Lien : fairedesdevis.fr/?ref={a.code}</p>
+                            <p className="text-xs text-gray-400 mb-2">fairedesdevis.fr/?ref={a.code}</p>
                           </div>
                         </div>
                         <div className="flex gap-2 mt-3">
-                          <button onClick={() => handleApprouverAffilie(a)} className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700">
+                          <button onClick={() => handleApprouverParrain(a)} className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700">
                             ✅ Approuver et envoyer le lien
                           </button>
-                          <button onClick={() => handleRefuserAffilie(a)} className="bg-red-50 text-red-500 px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100">
+                          <button onClick={() => handleRefuserParrain(a)} className="bg-red-50 text-red-500 px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100">
                             ❌ Refuser
                           </button>
                         </div>
@@ -389,21 +388,21 @@ export default function Admin() {
             )}
 
             <div>
-              <h3 className="font-bold text-gray-900 mb-3">✅ Affiliés approuvés ({affiliesApprouves.length})</h3>
-              {affiliesApprouves.length === 0 ? (
+              <h3 className="font-bold text-gray-900 mb-3">✅ Apporteurs approuvés ({parrainApprouves.length})</h3>
+              {parrainApprouves.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                  <p className="text-gray-400 text-sm">Aucun affilié approuvé pour l instant</p>
+                  <p className="text-gray-400 text-sm">Aucun apporteur approuvé pour l'instant</p>
                 </div>
               ) : (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                   <div className="divide-y divide-gray-100">
-                    {affiliesApprouves.map(a => (
+                    {parrainApprouves.map(a => (
                       <div key={a.id} className="px-6 py-4">
                         <div className="flex justify-between items-start flex-wrap gap-3">
                           <div className="flex-1">
                             <p className="font-semibold text-gray-900">{a.nom}</p>
                             <p className="text-sm text-gray-500">{a.email}</p>
-                            {a.activite && <p className="text-xs text-gray-400">Société : {a.activite}</p>}
+                            {a.activite && <p className="text-xs text-gray-400">Activité : {a.activite}</p>}
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-gray-400">Code : <span className="font-mono font-bold text-blue-600">{a.code}</span></p>
@@ -412,7 +411,7 @@ export default function Admin() {
                           </div>
                         </div>
                         <div className="flex gap-2 mt-3">
-                          <button onClick={() => handleSupprimerAffilie(a)} className="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100">
+                          <button onClick={() => handleSupprimerParrain(a)} className="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100">
                             🗑️ Supprimer
                           </button>
                         </div>

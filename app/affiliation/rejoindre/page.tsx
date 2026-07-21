@@ -21,7 +21,7 @@ export default function RejoindreAffiliation() {
 
     const code = genererCode(form.nom)
 
-    const { error: err } = await supabase.from('affilies').insert({
+    const { error: err } = await supabase.from('parrains').insert({
       nom: form.nom,
       email: form.email,
       code,
@@ -30,7 +30,7 @@ export default function RejoindreAffiliation() {
     })
 
     if (err) {
-      setError('Erreur lors de l inscription. Réessayez.')
+      setError("Erreur lors de l'inscription. Réessayez.")
       setLoading(false)
       return
     }
@@ -38,7 +38,7 @@ export default function RejoindreAffiliation() {
     await fetch('/api/notifier-inscription', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom: form.nom + ' (AFFILIÉ)', email: form.email, metier: form.activite || 'Affilié' })
+      body: JSON.stringify({ nom: form.nom + ' (APPORTEUR)', email: form.email, metier: form.activite || 'Apporteur d\'affaires' })
     })
 
     setSuccess(true)
@@ -50,12 +50,12 @@ export default function RejoindreAffiliation() {
       <div className="bg-white rounded-2xl shadow p-8 w-full max-w-md text-center">
         <div className="text-5xl mb-4">🎉</div>
         <a href="/" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
-        <h2 className="text-2xl font-bold text-gray-900 mt-4 mb-2">Bienvenue dans le programme !</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mt-4 mb-2">Demande reçue !</h2>
         <p className="text-gray-500 text-sm mb-6">
-          Votre demande a été reçue. Nous vous contactons sous 24h avec votre lien d'affiliation personnalisé et accès à votre dashboard.
+          Votre demande a été reçue. Nous vous contactons sous 24h avec votre lien personnel et l'accès à votre espace apporteur.
         </p>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-6">
-          <p className="text-blue-700 text-sm font-medium">📧 Vérifiez votre boîte mail — un email de confirmation vous a été envoyé.</p>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 mb-6">
+          <p className="text-emerald-700 text-sm font-medium">📧 Un email de confirmation va vous être envoyé.</p>
         </div>
         <a href="/" className="block bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
           Retour à l'accueil →
@@ -68,8 +68,8 @@ export default function RejoindreAffiliation() {
     <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="bg-white rounded-2xl shadow p-8 w-full max-w-lg">
         <a href="/affiliation" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
-        <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Rejoindre le programme</h2>
-        <p className="text-gray-500 text-sm mb-8">Gagnez 4€/mois par artisan parrainé — sans limite</p>
+        <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Devenir apporteur d'affaires</h2>
+        <p className="text-gray-500 text-sm mb-8">Gagnez 4€/mois par client actif apporté — sans limite</p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
@@ -107,7 +107,7 @@ export default function RejoindreAffiliation() {
             />
           </div>
           <div>
-            <label className="text-sm text-gray-600 mb-1 block">Comment comptez-vous promouvoir FaireDesDevis ?</label>
+            <label className="text-sm text-gray-600 mb-1 block">Comment comptez-vous nous amener des clients ?</label>
             <textarea
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 h-24 resize-none"
               placeholder="Je suis expert-comptable avec 50 clients artisans, je conseille des groupements professionnels..."
@@ -116,15 +116,15 @@ export default function RejoindreAffiliation() {
             />
           </div>
 
-          <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-            <p className="text-blue-700 text-sm font-semibold mb-1">💶 Ce que vous gagnez :</p>
-            <p className="text-blue-600 text-sm">4€/mois par client actif · Virement mensuel · Sans plafond</p>
+          <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-4 py-3">
+            <p className="text-emerald-700 text-sm font-semibold mb-1">💶 Ce que vous gagnez :</p>
+            <p className="text-emerald-600 text-sm">4€/mois par client actif · Virement mensuel · Sans plafond</p>
           </div>
 
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 transition"
+            className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-emerald-700 disabled:opacity-50 transition"
           >
             {loading ? 'Inscription en cours...' : 'Rejoindre le programme →'}
           </button>
