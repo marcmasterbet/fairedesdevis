@@ -64,18 +64,18 @@ export default function Affiliation() {
           <p className="text-blue-200 mb-10">4€ par client actif par mois — sans plafond</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { clients: 5, gain: 20 },
-              { clients: 10, gain: 40 },
-              { clients: 25, gain: 100 },
-              { clients: 50, gain: 200 },
-            ].map((s, i) => (
-              <div key={i} className="bg-white bg-opacity-10 rounded-2xl p-6">
-                <p className="text-3xl font-bold text-white">{s.clients}</p>
-                <p className="text-blue-200 text-sm mb-3">clients parrainés</p>
-                <p className="text-2xl font-bold text-amber-400">{s.gain}€</p>
-                <p className="text-blue-200 text-xs">par mois</p>
-              </div>
-            ))}
+  { clients: 5, gain: '20€', label: '/mois' },
+  { clients: 10, gain: '40€', label: '/mois' },
+  { clients: 25, gain: '100€', label: '/mois' },
+  { clients: 50, gain: '200€', label: '/mois' },
+].map((s, i) => (
+  <div key={i} className="bg-white rounded-2xl p-6 text-center">
+    <p className="text-3xl font-bold text-gray-900">{s.clients}</p>
+    <p className="text-sm text-gray-500 mb-3">clients apportés</p>
+    <p className="text-2xl font-bold text-emerald-600">{s.gain}</p>
+    <p className="text-xs text-gray-400">{s.label}</p>
+  </div>
+))}
           </div>
         </div>
       </section>
