@@ -5,33 +5,37 @@ import { useRouter } from 'next/navigation'
 
 export default function AffiliationDashboard() {
   const router = useRouter()
-  const [affilie, setAffilie] = useState<any>(null)
+  const [parrain, setParrain] = useState<any>(null)
   const [filleuls, setFilleuls] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [iban, setIban] = useState('')
+  const [titulaire, setTitulaire] = useState('')
+  const [savingRib, setSavingRib] = useState(false)
+  const [ribSaved, setRibSaved] = useState(false)
 
   useEffect(() => {
     const load = async () => {
-      // Lire l'email depuis la session Supabase
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      // Vérifier qu'il est bien affilié et approuvé
-      const { data: affilieData } = await supabase
-        .from('affilies')
+      const { data: parrainData } = await supabase
+        .from('parrains')
         .select('*')
         .eq('email', user.email)
         .eq('statut', 'approuve')
         .single()
 
-      if (!affilieData) { router.push('/'); return }
+      if (!parrainData) { router.push('/'); return }
 
-      setAffilie(affilieData)
+      setParrain(parrainData)
+      setIban(parrainData.iban || '')
+      setTitulaire(parrainData.titulaire || '')
 
       const { data: filleulsData } = await supabase
         .from('filleuls')
         .select('*')
-        .eq('ref_code', affilieData.code)
+        .eq('ref_code', parrainData.code)
 
       setFilleuls(filleulsData || [])
       setLoading(false)
@@ -40,9 +44,21 @@ export default function AffiliationDashboard() {
   }, [router])
 
   const copierLien = () => {
-    navigator.clipboard.writeText(`https://fairedesdevis.fr/?ref=${affilie.code}`)
+    navigator.clipboard.writeText(`https://fairedesdevis.fr/?ref=${parrain.code}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const sauvegarderRib = async () => {
+    if (!iban.trim()) return
+    setSavingRib(true)
+    await supabase
+      .from('parrains')
+      .update({ iban: iban.trim(), titulaire: titulaire.trim() })
+      .eq('id', parrain.id)
+    setSavingRib(false)
+    setRibSaved(true)
+    setTimeout(() => setRibSaved(false), 3000)
   }
 
   const filleulsActifs = filleuls.filter(f => f.commission_active).length
@@ -61,7 +77,7 @@ export default function AffiliationDashboard() {
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <a href="/" className="text-xl font-bold text-blue-600">FaireDesDevis</a>
           <div className="flex items-center gap-4">
-            <p className="text-sm text-gray-500">Espace affilié — {affilie.nom}</p>
+            <p className="text-sm text-gray-500">Espace apporteur — {parrain.nom}</p>
             <a href="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">Mon compte →</a>
           </div>
         </div>
@@ -73,55 +89,55 @@ export default function AffiliationDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-2xl p-6 border border-gray-200 text-center">
             <p className="text-4xl font-bold text-gray-900">{filleuls.length}</p>
-            <p className="text-gray-500 text-sm mt-1">Filleuls inscrits</p>
+            <p className="text-gray-500 text-sm mt-1">Clients apportés</p>
           </div>
           <div className="bg-white rounded-2xl p-6 border border-gray-200 text-center">
-            <p className="text-4xl font-bold text-blue-600">{filleulsActifs}</p>
+            <p className="text-4xl font-bold text-emerald-600">{filleulsActifs}</p>
             <p className="text-gray-500 text-sm mt-1">Abonnements actifs</p>
           </div>
-          <div className="bg-blue-600 rounded-2xl p-6 text-center">
+          <div className="bg-emerald-600 rounded-2xl p-6 text-center">
             <p className="text-4xl font-bold text-white">{gainsMois}€</p>
-            <p className="text-blue-200 text-sm mt-1">Gains ce mois</p>
+            <p className="text-emerald-200 text-sm mt-1">Gains ce mois</p>
           </div>
         </div>
 
-        {/* Lien affilié */}
+        {/* Lien apporteur */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h2 className="font-bold text-gray-900 text-lg mb-4">🔗 Votre lien d'affiliation</h2>
+          <h2 className="font-bold text-gray-900 text-lg mb-4">🔗 Votre lien d'apporteur</h2>
           <div className="flex gap-3 items-center">
             <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-700 font-mono truncate">
-              https://fairedesdevis.fr/?ref={affilie.code}
+              https://fairedesdevis.fr/?ref={parrain.code}
             </div>
             <button
               onClick={copierLien}
-              className="bg-blue-600 text-white px-5 py-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition whitespace-nowrap"
+              className="bg-emerald-600 text-white px-5 py-3 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition whitespace-nowrap"
             >
               {copied ? '✓ Copié !' : 'Copier'}
             </button>
           </div>
-          <p className="text-gray-400 text-xs mt-3">Partagez ce lien — chaque inscription via ce lien vous rapporte 4€/mois</p>
+          <p className="text-gray-400 text-xs mt-3">Partagez ce lien — chaque client actif apporté vous rapporte 4€/mois pendant 36 mois maximum</p>
         </div>
 
-        {/* Simulateur */}
+        {/* Projection de gains */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
           <h2 className="font-bold text-gray-900 text-lg mb-4">💶 Projection de gains</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[5, 10, 25, 50].map(n => (
               <div key={n} className="bg-gray-50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-gray-900">{n * 4}€</p>
+                <p className="text-2xl font-bold text-emerald-600">{n * 4}€</p>
                 <p className="text-gray-500 text-xs mt-1">{n} clients actifs</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Liste filleuls */}
+        {/* Liste clients apportés */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h2 className="font-bold text-gray-900 text-lg mb-4">👥 Vos filleuls ({filleuls.length})</h2>
+          <h2 className="font-bold text-gray-900 text-lg mb-4">👥 Vos clients apportés ({filleuls.length})</h2>
           {filleuls.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-4xl mb-3">🔗</p>
-              <p className="text-gray-500 text-sm">Aucun filleul pour l'instant.</p>
+              <p className="text-gray-500 text-sm">Aucun client apporté pour l'instant.</p>
               <p className="text-gray-400 text-xs mt-1">Partagez votre lien pour commencer à gagner !</p>
             </div>
           ) : (
@@ -147,13 +163,63 @@ export default function AffiliationDashboard() {
           )}
         </div>
 
-        {/* Infos paiement */}
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
-          <h2 className="font-bold text-amber-800 text-lg mb-2">💳 Vos virements</h2>
-          <p className="text-amber-700 text-sm">
-            Les commissions sont versées le <strong>1er de chaque mois</strong> par virement bancaire.
-            Pour mettre à jour vos coordonnées bancaires, contactez-nous à{' '}
-            <a href="mailto:affiliation@fairedesdevis.fr" className="underline">affiliation@fairedesdevis.fr</a>
+        {/* RIB pour les virements */}
+        <div className={`rounded-2xl p-6 border-2 ${parrain.iban ? 'bg-white border-emerald-200' : 'bg-amber-50 border-amber-300'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-gray-900 text-lg">🏦 Vos coordonnées bancaires</h2>
+            {parrain.iban && (
+              <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full">
+                ✓ RIB enregistré
+              </span>
+            )}
+          </div>
+
+          {!parrain.iban && (
+            <div className="bg-amber-100 border border-amber-200 rounded-lg px-4 py-3 mb-4">
+              <p className="text-amber-800 text-sm font-semibold">⚠️ RIB manquant — vos virements ne pourront pas être effectués</p>
+              <p className="text-amber-700 text-xs mt-1">Renseignez votre IBAN pour recevoir vos commissions le 5 de chaque mois.</p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm text-gray-600 mb-1 block">Titulaire du compte</label>
+              <input
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"
+                placeholder="Jean-Pierre Moreau"
+                value={titulaire}
+                onChange={e => setTitulaire(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-gray-600 mb-1 block">IBAN</label>
+              <input
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 font-mono"
+                placeholder="FR76 3000 6000 0112 3456 7890 189"
+                value={iban}
+                onChange={e => setIban(e.target.value.toUpperCase())}
+              />
+            </div>
+            <button
+              onClick={sauvegarderRib}
+              disabled={savingRib || !iban.trim()}
+              className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 transition"
+            >
+              {savingRib ? 'Enregistrement...' : ribSaved ? '✓ RIB enregistré !' : 'Enregistrer mon RIB'}
+            </button>
+          </div>
+          <p className="text-gray-400 text-xs mt-3">
+            🔒 Vos coordonnées bancaires sont sécurisées et uniquement utilisées pour les virements de commissions.
+          </p>
+        </div>
+
+        {/* Infos virement */}
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
+          <h2 className="font-bold text-gray-900 text-lg mb-2">📅 Calendrier des virements</h2>
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Les commissions sont versées le <strong>5 de chaque mois</strong> pour tous les clients actifs du mois précédent.
+            Dès le premier euro — pas de seuil minimum. Une question ?{' '}
+            <a href="mailto:affiliation@fairedesdevis.fr" className="text-emerald-600 underline">affiliation@fairedesdevis.fr</a>
           </p>
         </div>
 
