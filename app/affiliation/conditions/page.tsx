@@ -139,7 +139,7 @@ export default function Conditions() {
           <div className="bg-gray-50 rounded-2xl p-6 text-center">
             <p className="text-gray-500 text-sm mb-2">Une question sur le programme ?</p>
             <a href="mailto:affiliation@fairedesdevis.fr" className="text-blue-600 font-semibold hover:underline">
-              affiliation@fairedesdevis.fr
+              support@fairedesdevis.fr
             </a>
           </div>
 

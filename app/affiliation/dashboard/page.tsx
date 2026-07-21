@@ -219,7 +219,7 @@ export default function AffiliationDashboard() {
           <p className="text-gray-600 text-sm leading-relaxed">
             Les commissions sont versées le <strong>5 de chaque mois</strong> pour tous les clients actifs du mois précédent.
             Dès le premier euro — pas de seuil minimum. Une question ?{' '}
-            <a href="mailto:affiliation@fairedesdevis.fr" className="text-emerald-600 underline">affiliation@fairedesdevis.fr</a>
+            <a href="mailto:affiliation@fairedesdevis.fr" className="text-emerald-600 underline">support@fairedesdevis.fr</a>
           </p>
         </div>
 
