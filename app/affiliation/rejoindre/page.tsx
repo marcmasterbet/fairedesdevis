@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
 export default function RejoindreAffiliation() {
-  const [form, setForm] = useState({ nom: '', email: '', societe: '', description: '' })
+  const [form, setForm] = useState({ nom: '', email: '', activite: '', description: '' })
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -25,7 +25,7 @@ export default function RejoindreAffiliation() {
       nom: form.nom,
       email: form.email,
       code,
-      societe: form.societe,
+      activite: form.activite,
       description: form.description
     })
 
@@ -35,11 +35,10 @@ export default function RejoindreAffiliation() {
       return
     }
 
-    // Notifier l'admin
     await fetch('/api/notifier-inscription', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom: form.nom + ' (AFFILIÉ)', email: form.email, metier: form.societe || 'Affilié' })
+      body: JSON.stringify({ nom: form.nom + ' (AFFILIÉ)', email: form.email, metier: form.activite || 'Affilié' })
     })
 
     setSuccess(true)
@@ -59,7 +58,7 @@ export default function RejoindreAffiliation() {
           <p className="text-blue-700 text-sm font-medium">📧 Vérifiez votre boîte mail — un email de confirmation vous a été envoyé.</p>
         </div>
         <a href="/" className="block bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
-          Retour à l accueil →
+          Retour à l'accueil →
         </a>
       </div>
     </main>
@@ -99,12 +98,12 @@ export default function RejoindreAffiliation() {
             />
           </div>
           <div>
-            <label className="text-sm text-gray-600 mb-1 block">Société / Activité</label>
+            <label className="text-sm text-gray-600 mb-1 block">Société / Activité / Situation</label>
             <input
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-              placeholder="Cabinet comptable, Fournisseur matériaux..."
-              value={form.societe}
-              onChange={e => setForm(f => ({ ...f, societe: e.target.value }))}
+              placeholder="Expert-comptable, créateur de contenu, particulier..."
+              value={form.activite}
+              onChange={e => setForm(f => ({ ...f, activite: e.target.value }))}
             />
           </div>
           <div>

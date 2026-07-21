@@ -13,19 +13,25 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
 
   const getPasswordStrength = (pwd: string) => {
-  if (pwd.length === 0) return { label: '', color: '' }
-  if (pwd.length < 8) return { label: 'Trop court', color: 'bg-red-400' }
-  const hasUpper = /[A-Z]/.test(pwd)
-  const hasNumber = /[0-9]/.test(pwd)
-  const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
-  const score = [hasUpper, hasNumber, hasSymbol].filter(Boolean).length
-  if (score === 0) return { label: 'Faible', color: 'bg-red-400' }
-  if (score === 1) return { label: 'Moyen', color: 'bg-orange-400' }
-  if (score === 2) return { label: 'Bien', color: 'bg-yellow-400' }
-  return { label: 'Fort', color: 'bg-green-400' }
-}
+    if (pwd.length === 0) return { label: '', color: '' }
+    if (pwd.length < 8) return { label: 'Trop court', color: 'bg-red-400' }
+    const hasUpper = /[A-Z]/.test(pwd)
+    const hasNumber = /[0-9]/.test(pwd)
+    const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+    const score = [hasUpper, hasNumber, hasSymbol].filter(Boolean).length
+    if (score === 0) return { label: 'Faible', color: 'bg-red-400' }
+    if (score === 1) return { label: 'Moyen', color: 'bg-orange-400' }
+    if (score === 2) return { label: 'Bien', color: 'bg-yellow-400' }
+    return { label: 'Fort', color: 'bg-green-400' }
+  }
 
   const strength = getPasswordStrength(password)
+
+  // Lire le code affilié depuis le cookie
+  const getRefCookie = () => {
+    const match = document.cookie.match(/fairedesdevis_ref=([^;]+)/)
+    return match ? match[1] : null
+  }
 
   const handleRegister = async () => {
     if (!nom || !metier || !email || !password) {
@@ -48,28 +54,44 @@ export default function Register() {
       setError('Le mot de passe doit contenir au moins un symbole (!@#$%...).')
       return
     }
+
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signUp({
+
+    const refCode = getRefCookie()
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { nom, metier },
+        data: { nom, metier, ref: refCode },
         emailRedirectTo: 'https://fairedesdevis.fr/auth/callback'
       }
     })
+
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      await fetch('/api/notifier-inscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nom, email, metier })
-      })
-      setSuccess(true)
-      setLoading(false)
+      return
     }
+
+    // Si parrainé, enregistrer dans la table filleuls
+    if (refCode && data.user) {
+      await supabase.from('filleuls').insert({
+        user_id: data.user.id,
+        ref_code: refCode,
+        email: email,
+      })
+    }
+
+    await fetch('/api/notifier-inscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nom, email, metier, ref: refCode })
+    })
+
+    setSuccess(true)
+    setLoading(false)
   }
 
   if (success) return (
@@ -100,7 +122,7 @@ export default function Register() {
       <div className="bg-white rounded-2xl shadow p-8 w-full max-w-md">
         <a href="/" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
         <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Créer votre compte</h2>
-        <p className="text-gray-500 text-sm mb-6">1 devis gratuit — carte bancaire requise, aucun prélèvement pendant 30 jours</p>
+        <p className="text-gray-500 text-sm mb-6">1 mois gratuit — carte bancaire requise, aucun prélèvement pendant 30 jours</p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
@@ -143,7 +165,7 @@ export default function Register() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 pr-12"
-                placeholder="Minimum 6 caractères"
+                placeholder="Minimum 8 caractères"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />

@@ -31,7 +31,7 @@ interface Affilie {
   nom: string
   email: string
   code: string
-  societe: string
+  activite: string
   description: string
   created_at: string
   statut: string
@@ -364,7 +364,7 @@ export default function Admin() {
                           <div className="flex-1">
                             <p className="font-semibold text-gray-900">{a.nom}</p>
                             <p className="text-sm text-gray-500">{a.email}</p>
-                            {a.societe && <p className="text-xs text-gray-400 mt-1">Société : {a.societe}</p>}
+                            {a.activite && <p className="text-xs text-gray-400 mt-1">Société : {a.activite}</p>}
                             {a.description && <p className="text-xs text-gray-500 mt-1 italic">"{a.description}"</p>}
                             <p className="text-xs text-gray-400 mt-1">Inscrit le {new Date(a.created_at).toLocaleDateString('fr-FR')}</p>
                           </div>
@@ -403,7 +403,7 @@ export default function Admin() {
                           <div className="flex-1">
                             <p className="font-semibold text-gray-900">{a.nom}</p>
                             <p className="text-sm text-gray-500">{a.email}</p>
-                            {a.societe && <p className="text-xs text-gray-400">Société : {a.societe}</p>}
+                            {a.activite && <p className="text-xs text-gray-400">Société : {a.activite}</p>}
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-gray-400">Code : <span className="font-mono font-bold text-blue-600">{a.code}</span></p>
