@@ -12,30 +12,22 @@ export default function AffiliationDashboard() {
 
   useEffect(() => {
     const load = async () => {
-      // Récupérer l'email de l'affilié depuis l'URL ou un cookie de session
-      const params = new URLSearchParams(window.location.search)
-      const email = params.get('email')
+      // Lire l'email depuis la session Supabase
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/login'); return }
 
-      if (!email) {
-        router.push('/affiliation/rejoindre')
-        return
-      }
-
-      // Récupérer l'affilié
+      // Vérifier qu'il est bien affilié et approuvé
       const { data: affilieData } = await supabase
         .from('affilies')
         .select('*')
-        .eq('email', email)
+        .eq('email', user.email)
+        .eq('statut', 'approuve')
         .single()
 
-      if (!affilieData) {
-        router.push('/affiliation/rejoindre')
-        return
-      }
+      if (!affilieData) { router.push('/'); return }
 
       setAffilie(affilieData)
 
-      // Récupérer ses filleuls
       const { data: filleulsData } = await supabase
         .from('filleuls')
         .select('*')
@@ -68,7 +60,10 @@ export default function AffiliationDashboard() {
       <header className="bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <a href="/" className="text-xl font-bold text-blue-600">FaireDesDevis</a>
-          <p className="text-sm text-gray-500">Dashboard affilié — {affilie.nom}</p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-gray-500">Espace affilié — {affilie.nom}</p>
+            <a href="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">Mon compte →</a>
+          </div>
         </div>
       </header>
 
