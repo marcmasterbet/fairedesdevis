@@ -127,7 +127,7 @@ export default function Register() {
           <div className="space-y-0.5">
             <p className="text-blue-600 text-xs">✅ Aucun engagement</p>
             <p className="text-blue-600 text-xs">✅ Annulation en 1 clic avant la fin de l'essai</p>
-            <p className="text-blue-600 text-xs">✅ Aucun frais pendant 30 jours</p>
+            <p className="text-blue-600 text-xs">✅ Aucun frais pendant 7 jours</p>
           </div>
         </div>
 
