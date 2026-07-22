@@ -19,8 +19,8 @@ export async function GET() {
       const dateInscription = new Date(u.created_at)
       const maintenant = new Date()
       const joursDepuisInscription = Math.floor((maintenant.getTime() - dateInscription.getTime()) / (1000 * 60 * 60 * 24))
-      const joursRestants = 30 - joursDepuisInscription
-      const essaiActif = joursRestants > 0
+      const joursRestants = 7 - joursDepuisInscription
+      const essaiActif = joursDepuisInscription >= 0 && joursDepuisInscription <= 7
 
       const bannedUntil = (u as any).banned_until || null
       const suspendu = bannedUntil && bannedUntil !== 'none' && new Date(bannedUntil) > new Date()
