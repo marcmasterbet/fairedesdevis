@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         }
       ],
       subscription_data: {
-        trial_period_days: 30,
+        trial_period_days: 7,
         metadata: { userId }
       },
       metadata: { userId },
