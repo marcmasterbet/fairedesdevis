@@ -27,11 +27,6 @@ export default function Register() {
 
   const strength = getPasswordStrength(password)
 
-  const getRefCookie = () => {
-    const match = document.cookie.match(/fairedesdevis_ref=([^;]+)/)
-    return match ? match[1] : null
-  }
-
   const handleRegister = async () => {
     if (!nom || !metier || !email || !password) {
       setError('Veuillez remplir tous les champs.')
@@ -57,13 +52,11 @@ export default function Register() {
     setLoading(true)
     setError('')
 
-    const refCode = getRefCookie()
-
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { nom, metier, ref: refCode },
+        data: { nom, metier },
         emailRedirectTo: 'https://fairedesdevis.fr/auth/callback'
       }
     })
@@ -74,18 +67,10 @@ export default function Register() {
       return
     }
 
-    if (refCode && data.user) {
-      await supabase.from('filleuls').insert({
-        user_id: data.user.id,
-        ref_code: refCode,
-        email: email,
-      })
-    }
-
     await fetch('/api/notifier-inscription', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom, email, metier, ref: refCode })
+      body: JSON.stringify({ nom, email, metier })
     })
 
     setSuccess(true)
@@ -121,7 +106,6 @@ export default function Register() {
         <a href="/" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
         <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Créer votre compte</h2>
 
-        {/* Message rassurant */}
         <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-6">
           <p className="text-blue-700 text-sm font-semibold mb-1">🎉 7 jours pour créer autant de devis que vous voulez</p>
           <div className="space-y-0.5">
