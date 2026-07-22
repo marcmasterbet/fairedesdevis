@@ -5,25 +5,24 @@ export default function Affiliation() {
   const [faqOpen, setFaqOpen] = useState<number | null>(null)
 
   const faqs = [
-    { q: "Comment je reçois mes commissions ?", a: "Chaque mois vous recevez un virement bancaire le 5 du mois pour toutes vos commissions. Dès le premier euro gagné — pas de seuil minimum." },
-    { q: "Combien de temps dure la commission ?", a: "Jusqu'à 36 mois par client. Tant que votre client reste abonné et dans la limite des 36 mois, vous touchez 4€/mois. Si il résilie, la commission s'arrête immédiatement." },
-    { q: "Y a-t-il un nombre maximum de clients à apporter ?", a: "Non, aucune limite ! Plus vous apportez de clients, plus vous gagnez." },
-    { q: "Comment savoir si mes clients se sont inscrits ?", a: "Depuis votre dashboard FaireDesDevis, vous voyez en temps réel vos clients apportés et vos commissions." },
+    { q: "Comment je reçois mes 15€ ?", a: "Une fois votre client validé (SIRET valide + 2 mois payants + 1 devis créé), vous recevez 15€ par virement bancaire le 5 du mois suivant la validation. Dès le premier client — pas de seuil minimum." },
+    { q: "Combien de clients puis-je apporter ?", a: "Maximum 10 clients validés par mois, soit 150€/mois maximum. Les clients au-delà du quota mensuel sont perdus — ils ne sont pas reportés au mois suivant. Il n'y a pas de limite sur le total." },
+    { q: "Quand est-ce qu'un client est considéré validé ?", a: "Un client est validé quand il a : un SIRET valide, 2 mois payants après l'essai gratuit, et au moins 1 devis créé sur le logiciel." },
+    { q: "Comment savoir si mes clients se sont inscrits ?", a: "Depuis votre dashboard FaireDesDevis, vous voyez en temps réel vos clients apportés et leur statut de validation." },
     { q: "Est-ce que je dois être client FaireDesDevis ?", a: "Non ! Vous pouvez être apporteur sans être abonné. Mais nous recommandons de tester le produit pour mieux le recommander." },
-    { q: "Quand est-ce que je reçois ma première commission ?", a: "Dès qu'un de vos clients paye son premier mois abonné — soit 30 jours après son inscription. Le virement tombe le 5 du mois suivant." },
     { q: "Un client peut-il avoir plusieurs apporteurs ?", a: "Non. Un seul apporteur par client — celui dont le lien a été cliqué en premier. C'est irrévocable et automatique." },
+    { q: "Les 15€ sont-ils imposables ?", a: "Oui. Les commissions constituent des revenus imposables que vous devez déclarer selon votre situation fiscale (particulier, auto-entrepreneur, société)." },
   ]
 
   const etapes = [
     { num: "1", titre: "Inscrivez-vous", desc: "Remplissez le formulaire gratuitement. Nous validons votre demande sous 24h et vous envoyons votre lien unique.", icon: "✍️" },
     { num: "2", titre: "Partagez votre lien", desc: "Envoyez votre lien à des artisans, publiez sur les réseaux, intégrez-le à votre site ou vos emails.", icon: "🔗" },
-    { num: "3", titre: "Touchez vos commissions", desc: "4€/mois par client actif. Virement le 5 de chaque mois. Jusqu'à 36 mois par client.", icon: "💶" },
+    { num: "3", titre: "Touchez 15€ par client", desc: "15€ par client validé. Virement le 5 du mois suivant la validation. Maximum 10 clients par mois.", icon: "💶" },
   ]
 
   return (
     <main className="min-h-screen bg-white">
 
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <a href="/" className="text-xl font-bold text-blue-600">FaireDesDevis</a>
@@ -51,10 +50,10 @@ export default function Affiliation() {
             🤝 Programme Apporteurs d'affaires — FaireDesDevis
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Gagnez <span className="text-emerald-600">4€/mois</span><br/>par client apporté
+            Gagnez <span className="text-emerald-600">15€</span><br/>par client apporté
           </h1>
           <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Recommandez FaireDesDevis aux artisans de votre réseau et touchez une commission récurrente jusqu'à 36 mois par client. Sans limite, sans engagement.
+            Recommandez FaireDesDevis aux artisans de votre réseau et touchez 15€ par client validé. Versement unique, sans abonnement, sans prise de tête.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <a href="/affiliation/rejoindre" className="bg-emerald-600 text-white px-8 py-4 rounded-xl text-lg font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">
@@ -64,7 +63,7 @@ export default function Affiliation() {
               Voir les conditions
             </a>
           </div>
-          <p className="text-gray-400 text-sm">Gratuit · Sans engagement · Virement le 5 du mois</p>
+          <p className="text-gray-400 text-sm">Gratuit · Sans engagement · 15€ par client validé · Max 10/mois</p>
         </div>
       </section>
 
@@ -72,22 +71,23 @@ export default function Affiliation() {
       <section className="py-16 px-6 bg-blue-600">
         <div className="max-w-4xl mx-auto text-center text-white">
           <h2 className="text-3xl font-bold mb-4">Combien pouvez-vous gagner ?</h2>
-          <p className="text-blue-200 mb-10">4€ par client actif par mois — jusqu'à 36 mois par client</p>
+          <p className="text-blue-200 mb-10">15€ par client validé — maximum 10 clients par mois</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { clients: 5, gain: '20€', label: '/mois' },
-              { clients: 10, gain: '40€', label: '/mois' },
-              { clients: 25, gain: '100€', label: '/mois' },
-              { clients: 50, gain: '200€', label: '/mois' },
+              { clients: 1, gain: '15€' },
+              { clients: 3, gain: '45€' },
+              { clients: 5, gain: '75€' },
+              { clients: 10, gain: '150€' },
             ].map((s, i) => (
               <div key={i} className="bg-white rounded-2xl p-6 text-center">
                 <p className="text-3xl font-bold text-gray-900">{s.clients}</p>
-                <p className="text-sm text-gray-500 mb-3">clients apportés</p>
+                <p className="text-sm text-gray-500 mb-3">client{s.clients > 1 ? 's' : ''} validé{s.clients > 1 ? 's' : ''}</p>
                 <p className="text-2xl font-bold text-emerald-600">{s.gain}</p>
-                <p className="text-xs text-gray-400">{s.label}</p>
+                <p className="text-xs text-gray-400">versement unique</p>
               </div>
             ))}
           </div>
+          <p className="text-blue-200 text-sm mt-6">Maximum 10 clients par mois = 150€/mois maximum</p>
         </div>
       </section>
 
@@ -110,6 +110,24 @@ export default function Affiliation() {
               </div>
             ))}
           </div>
+
+          {/* Conditions de validation */}
+          <div className="mt-12 bg-white rounded-2xl border border-emerald-200 p-8">
+            <h3 className="font-bold text-gray-900 text-lg mb-6 text-center">✅ Conditions de validation d'un client</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { icon: '🏢', titre: 'SIRET valide', desc: 'Le client doit avoir un SIRET valide renseigné sur son compte.' },
+                { icon: '💳', titre: '2 mois payants', desc: 'Le client doit avoir payé 2 mois d\'abonnement après l\'essai gratuit.' },
+                { icon: '📄', titre: '1 devis créé', desc: 'Le client doit avoir créé au moins un devis sur le logiciel.' },
+              ].map((c, i) => (
+                <div key={i} className="text-center">
+                  <p className="text-3xl mb-2">{c.icon}</p>
+                  <p className="font-semibold text-gray-900 mb-1">{c.titre}</p>
+                  <p className="text-gray-500 text-sm">{c.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -121,12 +139,12 @@ export default function Affiliation() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: "🧮", titre: "Expert-comptable", desc: "Vous avez des clients artisans et indépendants qui font des devis. Recommandez-leur FaireDesDevis et gagnez sur chaque abonnement." },
+              { icon: "🧮", titre: "Expert-comptable", desc: "Vous avez des clients artisans et indépendants qui font des devis. Recommandez-leur FaireDesDevis et touchez 15€ par client inscrit." },
               { icon: "🏗️", titre: "Fournisseur matériaux", desc: "Vos clients artisans ont besoin d'outils pro. Intégrez notre programme à votre offre et créez une source de revenus additionnelle." },
               { icon: "📱", titre: "Créateur de contenu", desc: "Vous avez une audience d'artisans ou d'indépendants sur YouTube, Instagram ou TikTok ? Partagez votre lien et monétisez." },
-              { icon: "🏢", titre: "Groupement pro", desc: "CAPEB, FFB, chambres de métiers — proposez FaireDesDevis à vos adhérents et touchez une commission sur chaque inscription." },
+              { icon: "🏢", titre: "Groupement pro", desc: "CAPEB, FFB, chambres de métiers — proposez FaireDesDevis à vos adhérents et touchez 15€ par inscription validée." },
               { icon: "💼", titre: "Consultant", desc: "Vous accompagnez des artisans ou des PME ? Ajoutez FaireDesDevis à votre catalogue d'outils recommandés." },
-              { icon: "🤝", titre: "Tout le monde", desc: "Vous connaissez des artisans, plombiers, électriciens, menuisiers ? Partagez simplement votre lien et gagnez des commissions." },
+              { icon: "🤝", titre: "Tout le monde", desc: "Vous connaissez des artisans, plombiers, électriciens, menuisiers ? Partagez simplement votre lien et gagnez 15€ par client validé." },
             ].map((p, i) => (
               <div key={i} className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-emerald-300 hover:shadow-md transition">
                 <p className="text-3xl mb-4">{p.icon}</p>
@@ -146,9 +164,9 @@ export default function Affiliation() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              { icon: "♾️", titre: "Commission récurrente", desc: "Contrairement à une commission unique, vous touchez 4€ chaque mois jusqu'à 36 mois par client. Un client fidèle = des revenus passifs durables." },
-              { icon: "📊", titre: "Dashboard en temps réel", desc: "Suivez vos clients apportés et vos commissions directement depuis votre dashboard FaireDesDevis." },
-              { icon: "💸", titre: "Virement le 5 du mois", desc: "Vos commissions sont versées le 5 de chaque mois par virement bancaire. Dès le premier euro — pas de seuil minimum." },
+              { icon: "💶", titre: "15€ par client — versement unique", desc: "Simple et lisible. Pas de calcul complexe — 15€ par client validé, versés le 5 du mois suivant la validation." },
+              { icon: "📊", titre: "Dashboard en temps réel", desc: "Suivez vos clients apportés et leur statut de validation directement depuis votre dashboard FaireDesDevis." },
+              { icon: "💸", titre: "Dès le 1er client", desc: "Pas de seuil minimum. Votre 1er client validé = 15€ virés sur votre compte le 5 du mois suivant." },
               { icon: "🚀", titre: "Produit qui se vend tout seul", desc: "FaireDesDevis résout un vrai problème des artisans. Pas besoin de forcer — montrez-le une fois et les artisans adhèrent naturellement." },
               { icon: "🎯", titre: "Marché immense", desc: "3 millions d'artisans en France font des devis manuellement. La cible est immense et peu exploitée par la concurrence." },
               { icon: "🤝", titre: "Support dédié", desc: "Une question ? Nous répondons sous 24h. Vous n'êtes pas seul — on vous aide à réussir car votre succès est le nôtre." },
@@ -201,11 +219,11 @@ export default function Affiliation() {
       <section className="py-20 px-6 bg-emerald-600 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Prêt à gagner des commissions ?</h2>
-          <p className="text-emerald-100 text-lg mb-8">Rejoignez notre programme gratuitement et commencez à gagner dès votre premier client apporté</p>
+          <p className="text-emerald-100 text-lg mb-8">Rejoignez notre programme gratuitement et touchez 15€ dès votre premier client validé</p>
           <a href="/affiliation/rejoindre" className="inline-block bg-white text-emerald-700 px-10 py-4 rounded-xl text-lg font-bold hover:bg-emerald-50 transition">
             Devenir apporteur gratuitement →
           </a>
-          <p className="text-emerald-200 text-sm mt-4">Gratuit · Sans engagement · 4€/mois · Virement le 5 du mois</p>
+          <p className="text-emerald-200 text-sm mt-4">Gratuit · Sans engagement · 15€ par client · Max 10/mois</p>
         </div>
       </section>
 
