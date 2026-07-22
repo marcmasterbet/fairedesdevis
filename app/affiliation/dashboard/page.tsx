@@ -61,8 +61,16 @@ export default function AffiliationDashboard() {
     setTimeout(() => setRibSaved(false), 3000)
   }
 
-  const filleulsActifs = filleuls.filter(f => f.commission_active).length
-  const gainsMois = filleulsActifs * 4
+  const clientsValides = filleuls.filter(f => f.commission_active).length
+  const gainsTotal = clientsValides * 15
+
+  // Clients ce mois (inscrits ce mois-ci)
+  const maintenant = new Date()
+  const clientsCeMois = filleuls.filter(f => {
+    const date = new Date(f.created_at)
+    return date.getMonth() === maintenant.getMonth() && date.getFullYear() === maintenant.getFullYear()
+  }).length
+  const quotaRestant = Math.max(0, 10 - clientsCeMois)
 
   if (loading) return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -86,20 +94,32 @@ export default function AffiliationDashboard() {
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl p-6 border border-gray-200 text-center">
             <p className="text-4xl font-bold text-gray-900">{filleuls.length}</p>
             <p className="text-gray-500 text-sm mt-1">Clients apportés</p>
           </div>
           <div className="bg-white rounded-2xl p-6 border border-gray-200 text-center">
-            <p className="text-4xl font-bold text-emerald-600">{filleulsActifs}</p>
-            <p className="text-gray-500 text-sm mt-1">Abonnements actifs</p>
+            <p className="text-4xl font-bold text-emerald-600">{clientsValides}</p>
+            <p className="text-gray-500 text-sm mt-1">Clients validés</p>
           </div>
           <div className="bg-emerald-600 rounded-2xl p-6 text-center">
-            <p className="text-4xl font-bold text-white">{gainsMois}€</p>
-            <p className="text-emerald-200 text-sm mt-1">Gains ce mois</p>
+            <p className="text-4xl font-bold text-white">{gainsTotal}€</p>
+            <p className="text-emerald-200 text-sm mt-1">Gains totaux</p>
+          </div>
+          <div className={`rounded-2xl p-6 text-center ${quotaRestant === 0 ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'}`}>
+            <p className={`text-4xl font-bold ${quotaRestant === 0 ? 'text-red-500' : 'text-blue-600'}`}>{quotaRestant}</p>
+            <p className="text-gray-500 text-sm mt-1">Quota restant ce mois</p>
           </div>
         </div>
+
+        {/* Alerte quota */}
+        {quotaRestant === 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl px-6 py-4">
+            <p className="text-red-700 text-sm font-semibold">⚠️ Quota mensuel atteint</p>
+            <p className="text-red-600 text-xs mt-1">Vous avez atteint la limite de 10 clients ce mois-ci. Les nouveaux clients apportés ce mois ne seront pas comptabilisés. Votre quota se renouvelle le 1er du mois prochain.</p>
+          </div>
+        )}
 
         {/* Lien apporteur */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
@@ -115,23 +135,24 @@ export default function AffiliationDashboard() {
               {copied ? '✓ Copié !' : 'Copier'}
             </button>
           </div>
-          <p className="text-gray-400 text-xs mt-3">Partagez ce lien — chaque client actif apporté vous rapporte 4€/mois pendant 36 mois maximum</p>
+          <p className="text-gray-400 text-xs mt-3">Chaque client validé vous rapporte <strong className="text-emerald-600">15€</strong> — versé le 5 du mois suivant la validation</p>
         </div>
 
-        {/* Projection de gains */}
+        {/* Simulateur */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h2 className="font-bold text-gray-900 text-lg mb-4">💶 Projection de gains</h2>
+          <h2 className="font-bold text-gray-900 text-lg mb-4">💶 Simulation de gains</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[5, 10, 25, 50].map(n => (
+            {[1, 3, 5, 10].map(n => (
               <div key={n} className="bg-gray-50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-emerald-600">{n * 4}€</p>
-                <p className="text-gray-500 text-xs mt-1">{n} clients actifs</p>
+                <p className="text-2xl font-bold text-emerald-600">{n * 15}€</p>
+                <p className="text-gray-500 text-xs mt-1">{n} client{n > 1 ? 's' : ''} validé{n > 1 ? 's' : ''}</p>
               </div>
             ))}
           </div>
+          <p className="text-xs text-gray-400 mt-3 text-center">Maximum 10 clients validés par mois = 150€/mois maximum</p>
         </div>
 
-        {/* Liste clients apportés */}
+        {/* Liste clients */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
           <h2 className="font-bold text-gray-900 text-lg mb-4">👥 Vos clients apportés ({filleuls.length})</h2>
           {filleuls.length === 0 ? (
@@ -155,7 +176,7 @@ export default function AffiliationDashboard() {
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-500'
                   }`}>
-                    {f.commission_active ? '✓ Actif — 4€/mois' : 'En attente'}
+                    {f.commission_active ? '✓ Validé — 15€' : 'En attente'}
                   </span>
                 </div>
               ))}
@@ -163,7 +184,25 @@ export default function AffiliationDashboard() {
           )}
         </div>
 
-        {/* RIB pour les virements */}
+        {/* Conditions de validation */}
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+          <h2 className="font-bold text-gray-900 text-lg mb-4">✅ Conditions de validation d'un client</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { icon: '🏢', titre: 'SIRET valide', desc: 'Le client doit avoir renseigné un SIRET valide sur son compte.' },
+              { icon: '💳', titre: '2 mois payants', desc: 'Le client doit avoir payé 2 mois d\'abonnement après l\'essai gratuit.' },
+              { icon: '📄', titre: '1 devis créé', desc: 'Le client doit avoir créé au moins un devis sur le logiciel.' },
+            ].map((c, i) => (
+              <div key={i} className="bg-white rounded-xl p-4 text-center">
+                <p className="text-2xl mb-2">{c.icon}</p>
+                <p className="font-semibold text-gray-900 text-sm mb-1">{c.titre}</p>
+                <p className="text-gray-500 text-xs">{c.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIB */}
         <div className={`rounded-2xl p-6 border-2 ${parrain.iban ? 'bg-white border-emerald-200' : 'bg-amber-50 border-amber-300'}`}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-900 text-lg">🏦 Vos coordonnées bancaires</h2>
@@ -177,7 +216,7 @@ export default function AffiliationDashboard() {
           {!parrain.iban && (
             <div className="bg-amber-100 border border-amber-200 rounded-lg px-4 py-3 mb-4">
               <p className="text-amber-800 text-sm font-semibold">⚠️ RIB manquant — vos virements ne pourront pas être effectués</p>
-              <p className="text-amber-700 text-xs mt-1">Renseignez votre IBAN pour recevoir vos commissions le 5 de chaque mois.</p>
+              <p className="text-amber-700 text-xs mt-1">Renseignez votre IBAN pour recevoir vos 15€ par client validé.</p>
             </div>
           )}
 
@@ -217,9 +256,9 @@ export default function AffiliationDashboard() {
         <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
           <h2 className="font-bold text-gray-900 text-lg mb-2">📅 Calendrier des virements</h2>
           <p className="text-gray-600 text-sm leading-relaxed">
-            Les commissions sont versées le <strong>5 de chaque mois</strong> pour tous les clients actifs du mois précédent.
-            Dès le premier euro — pas de seuil minimum. Une question ?{' '}
-            <a href="mailto:affiliation@fairedesdevis.fr" className="text-emerald-600 underline">support@fairedesdevis.fr</a>
+            Les 15€ par client validé sont versés le <strong>5 du mois suivant la validation</strong>.
+            Dès le premier client — pas de seuil minimum. Une question ?{' '}
+            <a href="mailto:support@fairedesdevis.fr" className="text-emerald-600 underline">support@fairedesdevis.fr</a>
           </p>
         </div>
 
