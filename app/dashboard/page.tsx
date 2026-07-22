@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [factures, setFactures] = useState<Facture[]>([])
   const [loading, setLoading] = useState(true)
   const [joursRestants, setJoursRestants] = useState<number | null>(null)
+  const [dateFinEssai, setDateFinEssai] = useState<string>('')
 
   useEffect(() => {
     let composantActif = true
@@ -78,7 +79,10 @@ export default function Dashboard() {
         setUser(utilisateurConnecte)
 
         if (!abonnementActif && !estVIP && essaiValide) {
-          setJoursRestants(7 - joursDepuisInscription)
+          const jours = 7 - joursDepuisInscription
+          setJoursRestants(jours)
+          const dateFin = new Date(dateInscription.getTime() + 7 * 24 * 60 * 60 * 1000)
+          setDateFinEssai(dateFin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))
         }
 
         const [resultatDevis, resultatFactures] = await Promise.all([
@@ -215,34 +219,34 @@ export default function Dashboard() {
 
       <div className="mx-auto max-w-5xl px-6 py-8 pb-24">
 
-        {/* Présentation */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Bonjour {nom} 👋</h1>
           {metier && <p className="mt-1 text-sm text-gray-500">{metier}</p>}
         </div>
 
-        {/* Bannière essai */}
+        {/* Bannière essai avec date exacte */}
         {joursRestants !== null && (
-          <div className={`mb-6 rounded-xl px-6 py-4 flex items-center justify-between gap-4 ${joursRestants <= 2 ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
-            <div>
-              <p className={`font-semibold text-sm ${joursRestants <= 2 ? 'text-red-700' : 'text-amber-700'}`}>
-                ⏳ Il vous reste <strong>{joursRestants} jour{joursRestants > 1 ? 's' : ''}</strong> d'essai gratuit
-              </p>
-              <p className={`text-xs mt-0.5 ${joursRestants <= 2 ? 'text-red-600' : 'text-amber-600'}`}>
-                Passez à l'abonnement pour continuer à utiliser FaireDesDevis après l'essai.
-              </p>
+          <div className={`mb-6 rounded-xl px-6 py-4 border ${joursRestants <= 2 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className={`font-semibold text-sm ${joursRestants <= 2 ? 'text-red-700' : 'text-amber-700'}`}>
+                  ⏳ Essai gratuit — il vous reste <strong>{joursRestants} jour{joursRestants > 1 ? 's' : ''}</strong>
+                </p>
+                <p className={`text-xs mt-1 ${joursRestants <= 2 ? 'text-red-600' : 'text-amber-600'}`}>
+                  ⚠️ Votre essai se termine le <strong>{dateFinEssai}</strong>. Résiliez avant cette date pour ne pas être débité.
+                </p>
+              </div>
+              <a
+                href="/abonnement"
+                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition ${joursRestants <= 2 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
+              >
+                S'abonner →
+              </a>
             </div>
-            
-            <a
-              href="/abonnement"
-              className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition ${joursRestants <= 2 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
-            >
-              S'abonner →
-            </a>
           </div>
         )}
 
-        {/* Statistiques des devis */}
+        {/* Stats devis */}
         <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="rounded-xl border border-gray-200 bg-white p-4">
             <p className="text-2xl font-bold text-gray-900">{devisCeMois.length}</p>
@@ -270,7 +274,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Statistiques des factures */}
+        {/* Stats factures */}
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3">
           <button
             type="button"
@@ -288,7 +292,6 @@ export default function Dashboard() {
             <p className="text-2xl font-bold text-green-600">{formaterMontant(montantPaye)}</p>
             <p className="mt-1 text-xs text-gray-500">Factures payées</p>
           </button>
-          
           <a
             href="/dashboard/factures"
             className="flex items-center justify-center rounded-xl border border-gray-200 bg-white p-4 transition hover:border-blue-300"

@@ -87,12 +87,15 @@ export default function Register() {
           Un email de confirmation a été envoyé à<br/>
           <strong className="text-gray-900">{email}</strong>
         </p>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 mb-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 mb-4">
           <p className="text-yellow-700 text-sm">
             📁 Si vous ne trouvez pas l'email, vérifiez vos <strong>spams</strong> ou courriers indésirables.
           </p>
         </div>
-        <p className="text-gray-400 text-sm mb-4">Une fois confirmé, cliquez sur le lien dans l'email pour accéder à votre compte.</p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-6">
+          <p className="text-blue-700 text-sm font-semibold mb-1">⏳ Votre essai de 7 jours commence dès confirmation</p>
+          <p className="text-blue-600 text-xs">Pour ne pas être débité, résiliez avant le 8ème jour depuis votre inscription.</p>
+        </div>
         <a href="/login" className="block bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
           Aller à la connexion →
         </a>
@@ -106,12 +109,13 @@ export default function Register() {
         <a href="/" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
         <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Créer votre compte</h2>
 
+        {/* Message rassurant */}
         <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-6">
           <p className="text-blue-700 text-sm font-semibold mb-1">🎉 7 jours pour créer autant de devis que vous voulez</p>
           <div className="space-y-0.5">
-            <p className="text-blue-600 text-xs">✅ Aucun engagement</p>
-            <p className="text-blue-600 text-xs">✅ Annulation en 1 clic avant la fin de l'essai</p>
             <p className="text-blue-600 text-xs">✅ Aucun frais pendant 7 jours</p>
+            <p className="text-blue-600 text-xs">✅ Annulation en 1 clic avant le 8ème jour</p>
+            <p className="text-blue-600 text-xs">✅ Aucun engagement — résiliez quand vous voulez</p>
           </div>
         </div>
 
@@ -198,7 +202,16 @@ export default function Register() {
         <p className="text-center text-sm text-gray-500 mt-6">
           Déjà un compte ? <a href="/login" className="text-blue-600 hover:underline">Se connecter</a>
         </p>
-        <p className="text-center text-xs text-gray-400 mt-4">🔒 Vos données sont sécurisées et chiffrées</p>
+
+        {/* Mention légale résiliation */}
+        <div className="mt-4 bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
+          <p className="text-xs text-gray-400 text-center leading-relaxed">
+            ⚠️ Une carte bancaire est requise pour démarrer l'essai. Aucun prélèvement pendant 7 jours.
+            Pour ne pas être débité, résiliez avant le 8ème jour depuis votre inscription.
+          </p>
+        </div>
+
+        <p className="text-center text-xs text-gray-400 mt-3">🔒 Vos données sont sécurisées et chiffrées</p>
       </div>
     </main>
   )
