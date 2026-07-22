@@ -85,6 +85,13 @@ export default function Abonnement() {
           <span>✅ Résiliation libre</span>
         </div>
 
+        {/* Mention légale résiliation */}
+        <div className="mt-4 bg-gray-50 border border-gray-100 rounded-lg px-4 py-3">
+          <p className="text-xs text-gray-400 leading-relaxed">
+            ⚠️ En vous abonnant, votre carte bancaire sera prélevée de 24,99€ à chaque renouvellement mensuel. Vous pouvez résilier à tout moment en 1 clic depuis votre espace client, sans frais ni préavis.
+          </p>
+        </div>
+
         <p className="text-gray-300 text-xs mt-3">
           Une question ? <a href="mailto:support@fairedesdevis.fr" className="text-blue-400 hover:underline">support@fairedesdevis.fr</a>
         </p>
