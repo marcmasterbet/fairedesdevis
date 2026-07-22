@@ -123,7 +123,7 @@ export default function Register() {
 
         {/* Message rassurant */}
         <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-6">
-          <p className="text-blue-700 text-sm font-semibold mb-1">🎉 30 jours pour créer autant de devis que vous voulez</p>
+          <p className="text-blue-700 text-sm font-semibold mb-1">🎉 7 jours pour créer autant de devis que vous voulez</p>
           <div className="space-y-0.5">
             <p className="text-blue-600 text-xs">✅ Aucun engagement</p>
             <p className="text-blue-600 text-xs">✅ Annulation en 1 clic avant la fin de l'essai</p>
@@ -207,7 +207,7 @@ export default function Register() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
           >
-            {loading ? 'Création en cours...' : 'Commencer mes 30 jours gratuits →'}
+            {loading ? 'Création en cours...' : 'Commencer mes 7 jours gratuits →'}
           </button>
         </div>
 
