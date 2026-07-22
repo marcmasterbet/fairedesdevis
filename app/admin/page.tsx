@@ -26,24 +26,9 @@ interface Utilisateur {
   essaiActif?: boolean
 }
 
-interface Parrain {
-  id: string
-  nom: string
-  email: string
-  code: string
-  activite: string
-  description: string
-  created_at: string
-  statut: string
-  iban?: string
-  titulaire?: string
-}
-
 export default function Admin() {
   const [users, setUsers] = useState<Utilisateur[]>([])
-  const [parrains, setParrains] = useState<Parrain[]>([])
   const [loading, setLoading] = useState(true)
-  const [onglet, setOnglet] = useState<'users' | 'parrains'>('users')
   const [stats, setStats] = useState({ totalUsers: 0, totalDevis: 0, totalFactures: 0, totalMontant: 0, essaisActifs: 0, essaisExpires: 0, suspendus: 0, vip: 0 })
   const [search, setSearch] = useState('')
   const [filtre, setFiltre] = useState('tous')
@@ -58,7 +43,6 @@ export default function Admin() {
       if (!user) { router.push('/login'); return }
       if (user.email !== ADMIN_EMAIL) { router.push('/'); return }
       chargerUsers()
-      chargerParrains()
     }
     init()
   }, [router])
@@ -70,11 +54,6 @@ export default function Admin() {
     setUsers(data.users || [])
     setStats(data.stats || {})
     setLoading(false)
-  }
-
-  const chargerParrains = async () => {
-    const { data } = await supabase.from('parrains').select('*').order('created_at', { ascending: false })
-    setParrains(data || [])
   }
 
   const handleAction = async (action: string, user: Utilisateur) => {
@@ -115,33 +94,6 @@ export default function Admin() {
     setActionLoading(null)
   }
 
-  const handleApprouverParrain = async (parrain: Parrain) => {
-    await supabase.from('parrains').update({ statut: 'approuve' }).eq('id', parrain.id)
-    await fetch('/api/admin/action', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'email',
-        email: parrain.email,
-        message: `Bonjour ${parrain.nom},\n\nVotre demande a été approuvée — bienvenue dans le programme apporteurs d'affaires FaireDesDevis !\n\nVotre lien personnel :\nhttps://fairedesdevis.fr/?ref=${parrain.code}\n\nChaque artisan qui s'abonne via votre lien vous rapporte 4€/mois tant qu'il reste abonné.\n\nConnectez-vous sur fairedesdevis.fr pour suivre vos clients apportés et vos gains directement depuis votre dashboard. Pensez à renseigner votre RIB dans votre espace pour recevoir vos virements.\n\nBonne chance !\n\nMarc Bretzner\nFaireDesDevis`
-      })
-    })
-    chargerParrains()
-    alert('Apporteur approuvé et email envoyé !')
-  }
-
-  const handleRefuserParrain = async (parrain: Parrain) => {
-    if (!confirm('Refuser ' + parrain.nom + ' ?')) return
-    await supabase.from('parrains').update({ statut: 'refuse' }).eq('id', parrain.id)
-    chargerParrains()
-  }
-
-  const handleSupprimerParrain = async (parrain: Parrain) => {
-    if (!confirm('Supprimer ' + parrain.nom + ' ?')) return
-    await supabase.from('parrains').delete().eq('id', parrain.id)
-    chargerParrains()
-  }
-
   const filtered = users.filter(u => {
     const matchSearch = u.email?.toLowerCase().includes(search.toLowerCase()) ||
       u.user_metadata?.nom?.toLowerCase().includes(search.toLowerCase()) ||
@@ -153,10 +105,6 @@ export default function Admin() {
       (filtre === 'vip' && u.actifManuellement)
     return matchSearch && matchFiltre
   })
-
-  const parrainEnAttente = parrains.filter(a => !a.statut || a.statut === 'en_attente')
-  const parrainApprouves = parrains.filter(a => a.statut === 'approuve')
-  const parrainsSansRib = parrainApprouves.filter(a => !a.iban).length
 
   if (loading) return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -211,7 +159,7 @@ export default function Admin() {
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p className="text-2xl font-bold text-green-600">{stats.essaisActifs}</p>
-            <p className="text-xs text-gray-500 mt-1">Essais actifs</p>
+            <p className="text-xs text-gray-500 mt-1">Essais actifs (7j)</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p className="text-2xl font-bold text-orange-500">{stats.essaisExpires}</p>
@@ -239,213 +187,98 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* Onglets */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setOnglet('users')}
-            className={'px-6 py-2 rounded-lg text-sm font-semibold transition ' + (onglet === 'users' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50')}
-          >
-            👥 Utilisateurs ({users.length})
-          </button>
-          <button
-            onClick={() => setOnglet('parrains')}
-            className={'px-6 py-2 rounded-lg text-sm font-semibold transition relative ' + (onglet === 'parrains' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50')}
-          >
-            🤝 Apporteurs ({parrains.length})
-            {(parrainEnAttente.length > 0 || parrainsSansRib > 0) && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {parrainEnAttente.length + parrainsSansRib}
-              </span>
-            )}
-          </button>
+        {/* Filtres */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          {[
+            { key: 'tous', label: 'Tous' },
+            { key: 'actif', label: '🟢 Essai actif' },
+            { key: 'expire', label: '🟠 Essai expiré' },
+            { key: 'vip', label: '⭐ VIP' },
+            { key: 'suspendu', label: '🔒 Suspendu' },
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFiltre(f.key)}
+              className={'px-4 py-2 rounded-lg text-sm font-medium transition ' + (
+                filtre === f.key ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
-        {/* Onglet Utilisateurs */}
-        {onglet === 'users' && (
-          <>
-            <div className="flex gap-2 mb-4 flex-wrap">
-              {[
-                { key: 'tous', label: 'Tous' },
-                { key: 'actif', label: '🟢 Essai actif' },
-                { key: 'expire', label: '🟠 Essai expiré' },
-                { key: 'vip', label: '⭐ VIP' },
-                { key: 'suspendu', label: '🔒 Suspendu' },
-              ].map(f => (
-                <button
-                  key={f.key}
-                  onClick={() => setFiltre(f.key)}
-                  className={'px-4 py-2 rounded-lg text-sm font-medium transition ' + (
-                    filtre === f.key ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                  )}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+        <input
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 mb-4"
+          placeholder="Rechercher par nom, email, métier..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
 
-            <input
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 mb-4"
-              placeholder="Rechercher par nom, email, métier..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="bg-gray-50 px-6 py-3 border-b">
-                <p className="text-xs font-semibold text-gray-500 uppercase">{filtered.length} utilisateurs</p>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {filtered.map(u => (
-                  <div key={u.id} className={'px-6 py-4 ' + (u.suspendu ? 'bg-red-50' : u.actifManuellement ? 'bg-purple-50' : '')}>
-                    <div className="flex justify-between items-start flex-wrap gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <p className="font-semibold text-gray-900">{u.user_metadata?.nom || '—'}</p>
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{u.user_metadata?.metier || '—'}</span>
-                          {u.suspendu && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">🔒 Suspendu</span>}
-                          {u.actifManuellement && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">⭐ VIP</span>}
-                          {!u.suspendu && !u.actifManuellement && u.essaiActif && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">🟢 Essai — {u.joursRestants} jours restants</span>}
-                          {!u.suspendu && !u.actifManuellement && !u.essaiActif && <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">🟠 Essai expiré — J+{u.joursDepuisInscription}</span>}
-                        </div>
-                        <p className="text-sm text-gray-500">{u.email}</p>
-                        {u.user_metadata?.siret && <p className="text-xs text-gray-400 mt-1">SIRET : {u.user_metadata.siret}</p>}
-                        {u.user_metadata?.telephone && <p className="text-xs text-gray-400">Tel : {u.user_metadata.telephone}</p>}
-                        {u.user_metadata?.adresse && <p className="text-xs text-gray-400">{u.user_metadata.adresse}</p>}
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs text-gray-400">Inscrit le {new Date(u.created_at).toLocaleDateString('fr-FR')}</p>
-                        <p className="text-sm font-semibold text-gray-900 mt-1">{u.nbDevis || 0} devis</p>
-                        <p className="text-sm text-gray-500">{u.nbFactures || 0} factures</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-3 flex-wrap">
-                      <button onClick={() => setShowEmailModal(u)} className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-100">✉️ Email</button>
-                      {u.actifManuellement ? (
-                        <button onClick={() => handleAction('desactiver_vip', u)} disabled={actionLoading === u.id + 'desactiver_vip'} className="bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-purple-100 disabled:opacity-50">
-                          {actionLoading === u.id + 'desactiver_vip' ? '...' : '⭐ Retirer VIP'}
-                        </button>
-                      ) : (
-                        <button onClick={() => handleAction('activer_vip', u)} disabled={actionLoading === u.id + 'activer_vip'} className="bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-purple-100 disabled:opacity-50">
-                          {actionLoading === u.id + 'activer_vip' ? '...' : '⭐ Offrir accès'}
-                        </button>
-                      )}
-                      {u.suspendu ? (
-                        <button onClick={() => handleAction('reactiver', u)} disabled={actionLoading === u.id + 'reactiver'} className="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-100 disabled:opacity-50">
-                          {actionLoading === u.id + 'reactiver' ? '...' : '✅ Réactiver'}
-                        </button>
-                      ) : (
-                        <button onClick={() => handleAction('suspendre', u)} disabled={actionLoading === u.id + 'suspendre'} className="bg-amber-50 text-amber-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-100 disabled:opacity-50">
-                          {actionLoading === u.id + 'suspendre' ? '...' : '🔒 Suspendre'}
-                        </button>
-                      )}
-                      <button onClick={() => handleAction('supprimer', u)} disabled={actionLoading === u.id + 'supprimer'} className="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100 disabled:opacity-50">
-                        {actionLoading === u.id + 'supprimer' ? '...' : '🗑️ Supprimer'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Onglet Apporteurs */}
-        {onglet === 'parrains' && (
-          <div>
-            {parrainEnAttente.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                  ⏳ En attente d'approbation
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{parrainEnAttente.length}</span>
-                </h3>
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="divide-y divide-gray-100">
-                    {parrainEnAttente.map(a => (
-                      <div key={a.id} className="px-6 py-4 bg-amber-50">
-                        <div className="flex justify-between items-start flex-wrap gap-3">
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-900">{a.nom}</p>
-                            <p className="text-sm text-gray-500">{a.email}</p>
-                            {a.activite && <p className="text-xs text-gray-400 mt-1">Activité : {a.activite}</p>}
-                            {a.description && <p className="text-xs text-gray-500 mt-1 italic">"{a.description}"</p>}
-                            <p className="text-xs text-gray-400 mt-1">Inscrit le {new Date(a.created_at).toLocaleDateString('fr-FR')}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-gray-400 mb-2">Code : <span className="font-mono font-bold text-blue-600">{a.code}</span></p>
-                            <p className="text-xs text-gray-400 mb-2">fairedesdevis.fr/?ref={a.code}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 mt-3">
-                          <button onClick={() => handleApprouverParrain(a)} className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700">
-                            ✅ Approuver et envoyer le lien
-                          </button>
-                          <button onClick={() => handleRefuserParrain(a)} className="bg-red-50 text-red-500 px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100">
-                            ❌ Refuser
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                ✅ Apporteurs approuvés ({parrainApprouves.length})
-                {parrainsSansRib > 0 && (
-                  <span className="bg-amber-400 text-amber-900 text-xs px-2 py-0.5 rounded-full">{parrainsSansRib} sans RIB</span>
-                )}
-              </h3>
-              {parrainApprouves.length === 0 ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                  <p className="text-gray-400 text-sm">Aucun apporteur approuvé pour l'instant</p>
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="divide-y divide-gray-100">
-                    {parrainApprouves.map(a => (
-                      <div key={a.id} className="px-6 py-4">
-                        <div className="flex justify-between items-start flex-wrap gap-3">
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-900">{a.nom}</p>
-                            <p className="text-sm text-gray-500">{a.email}</p>
-                            {a.activite && <p className="text-xs text-gray-400">Activité : {a.activite}</p>}
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-gray-400">Code : <span className="font-mono font-bold text-blue-600">{a.code}</span></p>
-                            <p className="text-xs text-blue-600">fairedesdevis.fr/?ref={a.code}</p>
-                            <p className="text-xs text-gray-400 mt-1">Depuis le {new Date(a.created_at).toLocaleDateString('fr-FR')}</p>
-                          </div>
-                        </div>
-
-                        {/* RIB */}
-                        {a.iban ? (
-                          <div className="mt-3 bg-emerald-50 border border-emerald-100 rounded-lg px-4 py-3">
-                            <p className="text-xs font-semibold text-emerald-700 mb-1">🏦 Coordonnées bancaires</p>
-                            <p className="text-xs text-gray-700">Titulaire : <span className="font-semibold">{a.titulaire || '—'}</span></p>
-                            <p className="text-xs text-gray-700 font-mono mt-0.5">{a.iban}</p>
-                          </div>
-                        ) : (
-                          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                            <p className="text-xs font-semibold text-amber-700">⚠️ RIB non renseigné — virement impossible</p>
-                            <p className="text-xs text-amber-600 mt-0.5">L'apporteur doit renseigner son IBAN depuis son dashboard.</p>
-                          </div>
-                        )}
-
-                        <div className="flex gap-2 mt-3">
-                          <button onClick={() => handleSupprimerParrain(a)} className="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100">
-                            🗑️ Supprimer
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-gray-50 px-6 py-3 border-b">
+            <p className="text-xs font-semibold text-gray-500 uppercase">{filtered.length} utilisateurs</p>
           </div>
-        )}
+          <div className="divide-y divide-gray-100">
+            {filtered.map(u => (
+              <div key={u.id} className={'px-6 py-4 ' + (u.suspendu ? 'bg-red-50' : u.actifManuellement ? 'bg-purple-50' : '')}>
+                <div className="flex justify-between items-start flex-wrap gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <p className="font-semibold text-gray-900">{u.user_metadata?.nom || '—'}</p>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{u.user_metadata?.metier || '—'}</span>
+                      {u.suspendu && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">🔒 Suspendu</span>}
+                      {u.actifManuellement && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">⭐ VIP</span>}
+                      {!u.suspendu && !u.actifManuellement && u.essaiActif && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                          🟢 Essai 7j — {u.joursRestants} jour{u.joursRestants !== 1 ? 's' : ''} restant{u.joursRestants !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {!u.suspendu && !u.actifManuellement && !u.essaiActif && (
+                        <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
+                          🟠 Essai expiré — J+{u.joursDepuisInscription}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500">{u.email}</p>
+                    {u.user_metadata?.siret && <p className="text-xs text-gray-400 mt-1">SIRET : {u.user_metadata.siret}</p>}
+                    {u.user_metadata?.telephone && <p className="text-xs text-gray-400">Tel : {u.user_metadata.telephone}</p>}
+                    {u.user_metadata?.adresse && <p className="text-xs text-gray-400">{u.user_metadata.adresse}</p>}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs text-gray-400">Inscrit le {new Date(u.created_at).toLocaleDateString('fr-FR')}</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">{u.nbDevis || 0} devis</p>
+                    <p className="text-sm text-gray-500">{u.nbFactures || 0} factures</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3 flex-wrap">
+                  <button onClick={() => setShowEmailModal(u)} className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-100">✉️ Email</button>
+                  {u.actifManuellement ? (
+                    <button onClick={() => handleAction('desactiver_vip', u)} disabled={actionLoading === u.id + 'desactiver_vip'} className="bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-purple-100 disabled:opacity-50">
+                      {actionLoading === u.id + 'desactiver_vip' ? '...' : '⭐ Retirer VIP'}
+                    </button>
+                  ) : (
+                    <button onClick={() => handleAction('activer_vip', u)} disabled={actionLoading === u.id + 'activer_vip'} className="bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-purple-100 disabled:opacity-50">
+                      {actionLoading === u.id + 'activer_vip' ? '...' : '⭐ Offrir accès'}
+                    </button>
+                  )}
+                  {u.suspendu ? (
+                    <button onClick={() => handleAction('reactiver', u)} disabled={actionLoading === u.id + 'reactiver'} className="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-100 disabled:opacity-50">
+                      {actionLoading === u.id + 'reactiver' ? '...' : '✅ Réactiver'}
+                    </button>
+                  ) : (
+                    <button onClick={() => handleAction('suspendre', u)} disabled={actionLoading === u.id + 'suspendre'} className="bg-amber-50 text-amber-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-100 disabled:opacity-50">
+                      {actionLoading === u.id + 'suspendre' ? '...' : '🔒 Suspendre'}
+                    </button>
+                  )}
+                  <button onClick={() => handleAction('supprimer', u)} disabled={actionLoading === u.id + 'supprimer'} className="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100 disabled:opacity-50">
+                    {actionLoading === u.id + 'supprimer' ? '...' : '🗑️ Supprimer'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </main>
   )

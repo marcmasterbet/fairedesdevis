@@ -36,7 +36,11 @@ export default function Abonnement() {
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow p-8 max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">FaireDesDevis Pro</h1>
+
+        <a href="/" className="text-blue-600 font-bold text-xl block mb-6">FaireDesDevis</a>
+
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">Votre essai est terminé</h1>
+        <p className="text-gray-500 text-sm mb-6">Continuez à créer vos devis en quelques secondes</p>
 
         {cancel && (
           <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm mb-6">
@@ -44,12 +48,12 @@ export default function Abonnement() {
           </div>
         )}
 
-        <div className="bg-blue-600 rounded-2xl p-6 mb-6 mt-4">
-          <p className="text-5xl font-bold text-white mb-1">19,90€</p>
-          <p className="text-blue-200 text-sm">par mois · résiliation libre</p>
-          <div className="bg-amber-400 text-amber-900 text-sm font-bold px-4 py-2 rounded-full mt-4 inline-block">
-            🎉 1er mois gratuit
+        <div className="bg-blue-600 rounded-2xl p-6 mb-6 relative">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap">
+            ✅ Aucun engagement — annulation en 1 clic
           </div>
+          <p className="text-5xl font-bold text-white mb-1 mt-4">24,99€</p>
+          <p className="text-blue-200 text-sm">par mois · résiliation libre</p>
         </div>
 
         <ul className="space-y-2 text-left mb-6">
@@ -58,7 +62,7 @@ export default function Abonnement() {
             'Signature électronique légale',
             'Facturation en 1 clic',
             'Catalogue et clients illimités',
-            'Emails automatiques',
+            'Emails automatiques au client',
             'Support prioritaire',
           ].map((item, i) => (
             <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
@@ -72,9 +76,18 @@ export default function Abonnement() {
           disabled={loading}
           className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 transition"
         >
-          {loading ? 'Redirection...' : 'Commencer — 1 mois gratuit →'}
+          {loading ? 'Redirection...' : 'S\'abonner maintenant →'}
         </button>
-        <p className="text-gray-400 text-xs mt-4">Carte bancaire requise · Résiliation libre · Sans engagement</p>
+
+        <div className="flex justify-center gap-4 mt-4 text-gray-400 text-xs flex-wrap">
+          <span>✅ Aucun engagement</span>
+          <span>✅ Annulation en 1 clic</span>
+          <span>✅ Résiliation libre</span>
+        </div>
+
+        <p className="text-gray-300 text-xs mt-3">
+          Une question ? <a href="mailto:support@fairedesdevis.fr" className="text-blue-400 hover:underline">support@fairedesdevis.fr</a>
+        </p>
       </div>
     </main>
   )
