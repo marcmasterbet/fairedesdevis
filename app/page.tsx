@@ -21,11 +21,11 @@ export default function Home() {
   }, [router])
 
   const faqs = [
-    { q: "Est-ce vraiment gratuit le premier mois ?", a: "Oui, 1 mois complet offert. Vous accédez à toutes les fonctionnalités sans limitation. Une carte bancaire est requise pour démarrer — aucun prélèvement pendant 30 jours. À la fin du mois, vous choisissez de continuer à 19,90€/mois ou vous résiliez." },
+    { q: "Est-ce vraiment gratuit le premier mois ?", a: "Oui, 1 mois complet offert. Vous accédez à toutes les fonctionnalités sans limitation. Une carte bancaire est requise pour démarrer — aucun prélèvement pendant 30 jours. À la fin du mois, vous choisissez de continuer à 24,99€/mois ou vous résiliez." },
     { q: "Mes devis sont-ils vraiment professionnels ?", a: "Oui. L'IA génère des devis avec votre logo, votre signature, vos coordonnées bancaires, les conditions de paiement et les mentions légales. Vos clients reçoivent un document signé électroniquement." },
     { q: "La signature électronique a-t-elle une valeur légale ?", a: "Oui. La signature électronique avec mention 'Bon pour accord', horodatage et adresse IP a valeur légale en France conformément au règlement eIDAS." },
     { q: "Puis-je importer mon catalogue de produits ?", a: "Oui. Importez votre catalogue depuis un fichier CSV ou TXT. L'IA extrait automatiquement vos produits, références et prix." },
-    { q: "Combien de devis puis-je créer ?", a: "Illimité. Le plan unique à 19,90€/mois vous donne accès à des devis illimités, une facturation illimitée et un catalogue illimité." },
+    { q: "Combien de devis puis-je créer ?", a: "Illimité. Le plan unique à 24,99€/mois vous donne accès à des devis illimités, une facturation illimitée et un catalogue illimité." },
     { q: "Puis-je transformer un devis en facture ?", a: "Oui en 1 clic. Une fois le devis accepté et signé par votre client, transformez-le en facture automatiquement. Suivez vos paiements depuis votre dashboard." },
   ]
 
@@ -48,7 +48,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white">
 
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold text-blue-600">FaireDesDevis</h1>
@@ -73,7 +72,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
           <p className="text-white text-sm">
             <span className="font-semibold">💼 Vous êtes expert-comptable, formateur ou fournisseur ?</span>
-            {' '}Gagnez une commission récurrente en recommandant FaireDesDevis à vos clients artisans.
+            {' '}Touchez 15€ par client apporté en recommandant FaireDesDevis à vos clients artisans.
           </p>
           <a href="/affiliation" className="flex-shrink-0 bg-white text-emerald-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-emerald-50 transition">
             Découvrir le programme →
@@ -188,13 +187,13 @@ export default function Home() {
                 <span className="text-emerald-600">Gagnez avec eux.</span>
               </h2>
               <p className="text-gray-500 text-lg mb-6 leading-relaxed">
-                Recommandez FaireDesDevis à vos clients, votre réseau ou votre audience — et touchez <strong className="text-gray-700">4€/mois</strong> par artisan actif. Sans limite, sans engagement.
+                Recommandez FaireDesDevis à vos clients, votre réseau ou votre audience — et touchez <strong className="text-gray-700">15€</strong> par client apporté. Sans limite, sans engagement.
               </p>
               <ul className="space-y-3 mb-8">
                 {[
-                  '✅ Commission récurrente tant que le client est abonné',
-                  '✅ Dashboard en temps réel — clics, inscriptions, gains',
-                  '✅ Virement mensuel automatique',
+                  '✅ 15€ par client validé — versement unique',
+                  '✅ Maximum 10 clients par mois',
+                  '✅ Virement le 5 du mois suivant la validation',
                   '✅ Idéal pour experts-comptables, formateurs, fournisseurs',
                 ].map((item, i) => (
                   <li key={i} className="text-gray-600 text-sm">{item}</li>
@@ -206,15 +205,14 @@ export default function Home() {
             </div>
             <div className="flex-shrink-0 grid grid-cols-2 gap-4 w-full md:w-72">
               {[
-                { clients: 5, gain: '20€', label: '/mois' },
-                { clients: 10, gain: '40€', label: '/mois' },
-                { clients: 25, gain: '100€', label: '/mois' },
-                { clients: 50, gain: '200€', label: '/mois' },
+                { clients: 1, gain: '15€' },
+                { clients: 5, gain: '75€' },
+                { clients: 10, gain: '150€' },
+                { clients: 10, gain: '150€/mois', label: 'max' },
               ].map((s, i) => (
                 <div key={i} className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm text-center">
                   <p className="text-2xl font-bold text-emerald-600">{s.gain}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
-                  <p className="text-xs text-gray-500 mt-2">{s.clients} clients</p>
+                  <p className="text-xs text-gray-500 mt-2">{s.clients} client{s.clients > 1 ? 's' : ''} {s.label || 'apporté' + (s.clients > 1 ? 's' : '')}</p>
                 </div>
               ))}
             </div>
@@ -232,7 +230,7 @@ export default function Home() {
               🎉 1er mois gratuit
             </div>
             <h3 className="text-2xl font-bold text-white mb-2 mt-4">Plan unique</h3>
-            <p className="text-6xl font-bold text-white mb-1">19,90€</p>
+            <p className="text-6xl font-bold text-white mb-1">24,99€</p>
             <p className="text-blue-200 text-sm mb-8">par mois · résiliation libre</p>
             <ul className="space-y-3 text-left mb-8">
               {[
@@ -304,7 +302,7 @@ export default function Home() {
               <p className="text-gray-400 text-sm">Devis professionnels pour artisans</p>
             </div>
             <div className="flex gap-6 text-sm text-gray-400 flex-wrap justify-center">
-              <a href="/affiliation" className="hover:text-white transition font-semibold text-emerald-400">Programme affiliés</a>
+              <a href="/affiliation" className="hover:text-white transition font-semibold text-emerald-400">Programme partenaires</a>
               <a href="/legal/cgu" className="hover:text-white transition">CGU</a>
               <a href="/legal/confidentialite" className="hover:text-white transition">Confidentialité</a>
               <a href="/legal/mentions" className="hover:text-white transition">Mentions légales</a>
