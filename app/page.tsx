@@ -9,11 +9,6 @@ export default function Home() {
 
   useEffect(() => {
     const check = async () => {
-      const params = new URLSearchParams(window.location.search)
-      const ref = params.get('ref')
-      if (ref) {
-        document.cookie = `fairedesdevis_ref=${ref};max-age=2592000;path=/`
-      }
       const { data: { user } } = await supabase.auth.getUser()
       if (user) router.push('/dashboard')
     }
@@ -21,7 +16,7 @@ export default function Home() {
   }, [router])
 
   const faqs = [
-    { q: "Est-ce vraiment gratuit le premier mois ?", a: "Oui, 1 mois complet offert. Vous accédez à toutes les fonctionnalités sans limitation. Une carte bancaire est requise pour démarrer — aucun prélèvement pendant 30 jours. À la fin du mois, vous choisissez de continuer à 24,99€/mois ou vous résiliez." },
+    { q: "Est-ce vraiment gratuit les 7 premiers jours ?", a: "Oui, 7 jours complets pour tester toutes les fonctionnalités sans limitation. Aucun frais pendant 7 jours, aucun engagement, annulation en 1 clic avant la fin de l'essai. À la fin de l'essai, vous choisissez de continuer à 24,99€/mois ou vous résiliez — sans aucune contrainte." },
     { q: "Mes devis sont-ils vraiment professionnels ?", a: "Oui. L'IA génère des devis avec votre logo, votre signature, vos coordonnées bancaires, les conditions de paiement et les mentions légales. Vos clients reçoivent un document signé électroniquement." },
     { q: "La signature électronique a-t-elle une valeur légale ?", a: "Oui. La signature électronique avec mention 'Bon pour accord', horodatage et adresse IP a valeur légale en France conformément au règlement eIDAS." },
     { q: "Puis-je importer mon catalogue de produits ?", a: "Oui. Importez votre catalogue depuis un fichier CSV ou TXT. L'IA extrait automatiquement vos produits, références et prix." },
@@ -56,9 +51,6 @@ export default function Home() {
             <a href="#fonctionnalites" className="text-gray-600 hover:text-blue-600 text-sm">Fonctionnalités</a>
             <a href="#tarif" className="text-gray-600 hover:text-blue-600 text-sm">Tarif</a>
             <a href="#faq" className="text-gray-600 hover:text-blue-600 text-sm">FAQ</a>
-            <a href="/affiliation" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 border border-emerald-200 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition">
-              🤝 Programme partenaires
-            </a>
           </nav>
           <div className="flex items-center gap-3">
             <a href="/login" className="text-gray-600 hover:text-blue-600 text-sm">Connexion</a>
@@ -67,24 +59,11 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Bandeau partenaires */}
-      <div className="bg-emerald-600 px-6 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-          <p className="text-white text-sm">
-            <span className="font-semibold">💼 Vous êtes expert-comptable, formateur ou fournisseur ?</span>
-            {' '}Touchez 15€ par client apporté en recommandant FaireDesDevis à vos clients artisans.
-          </p>
-          <a href="/affiliation" className="flex-shrink-0 bg-white text-emerald-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-emerald-50 transition">
-            Découvrir le programme →
-          </a>
-        </div>
-      </div>
-
       {/* Hero */}
       <section className="py-20 px-6 text-center bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-4xl mx-auto">
           <div className="inline-block bg-blue-100 text-blue-700 text-sm font-semibold px-4 py-2 rounded-full mb-6">
-            🎉 1 mois gratuit — carte bancaire requise, aucun prélèvement pendant 30 jours
+            🎉 7 jours pour tester — aucun engagement, annulation en 1 clic
           </div>
           <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Votre devis professionnel<br/>
@@ -102,36 +81,42 @@ export default function Home() {
               Voir comment ça marche
             </a>
           </div>
-          <p className="text-gray-400 text-sm">1 mois gratuit · Carte bancaire requise · Résiliation en 1 clic</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center text-sm text-gray-500">
+            <span>✅ Aucun engagement</span>
+            <span className="hidden sm:block">·</span>
+            <span>✅ Annulation en 1 clic avant la fin de l'essai</span>
+            <span className="hidden sm:block">·</span>
+            <span>✅ Aucun frais pendant 7 jours</span>
+          </div>
         </div>
       </section>
 
-{/* Preuve sociale — marché */}
-<section className="py-10 px-6 bg-white border-b border-gray-100">
-  <div className="max-w-5xl mx-auto">
-    <p className="text-center text-gray-400 text-xs font-semibold uppercase tracking-widest mb-8">
-      Pourquoi FaireDesDevis ?
-    </p>
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-      <div>
-        <p className="text-3xl font-bold text-blue-600">3M+</p>
-        <p className="text-gray-500 text-sm mt-1">artisans en France font encore leurs devis à la main</p>
-      </div>
-      <div>
-        <p className="text-3xl font-bold text-blue-600">60s</p>
-        <p className="text-gray-500 text-sm mt-1">pour créer un devis professionnel complet avec l'IA</p>
-      </div>
-      <div>
-        <p className="text-3xl font-bold text-blue-600">100%</p>
-        <p className="text-gray-500 text-sm mt-1">légal — signature électronique conforme eIDAS</p>
-      </div>
-      <div>
-        <p className="text-3xl font-bold text-blue-600">0€</p>
-        <p className="text-gray-500 text-sm mt-1">pendant 30 jours — aucun engagement, annulation libre</p>
-      </div>
-    </div>
-  </div>
-</section>
+      {/* Preuve sociale — marché */}
+      <section className="py-10 px-6 bg-white border-b border-gray-100">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-center text-gray-400 text-xs font-semibold uppercase tracking-widest mb-8">
+            Pourquoi FaireDesDevis ?
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div>
+              <p className="text-3xl font-bold text-blue-600">3M+</p>
+              <p className="text-gray-500 text-sm mt-1">artisans en France font encore leurs devis à la main</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-blue-600">60s</p>
+              <p className="text-gray-500 text-sm mt-1">pour créer un devis professionnel complet avec l'IA</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-blue-600">100%</p>
+              <p className="text-gray-500 text-sm mt-1">légal — signature électronique conforme eIDAS</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-blue-600">0€</p>
+              <p className="text-gray-500 text-sm mt-1">pendant 7 jours — aucun engagement, annulation libre</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Stats */}
       <section className="py-12 px-6 bg-blue-600">
@@ -146,7 +131,7 @@ export default function Home() {
           </div>
           <div>
             <p className="text-3xl font-bold">0€</p>
-            <p className="text-blue-200 text-sm mt-1">Le premier mois</p>
+            <p className="text-blue-200 text-sm mt-1">Les 7 premiers jours</p>
           </div>
           <div>
             <p className="text-3xl font-bold">Légal</p>
@@ -201,52 +186,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Bloc programme partenaires */}
-      <section className="py-20 px-6 bg-emerald-50 border-y border-emerald-100">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-12">
-            <div className="flex-1">
-              <div className="inline-block bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-full mb-4">
-                🤝 Programme Partenaires
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                Vous connaissez des artisans ?<br/>
-                <span className="text-emerald-600">Gagnez avec eux.</span>
-              </h2>
-              <p className="text-gray-500 text-lg mb-6 leading-relaxed">
-                Recommandez FaireDesDevis à vos clients, votre réseau ou votre audience — et touchez <strong className="text-gray-700">15€</strong> par client apporté. Sans limite, sans engagement.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  '✅ 15€ par client validé — versement unique',
-                  '✅ Maximum 10 clients par mois',
-                  '✅ Virement le 5 du mois suivant la validation',
-                  '✅ Idéal pour experts-comptables, formateurs, fournisseurs',
-                ].map((item, i) => (
-                  <li key={i} className="text-gray-600 text-sm">{item}</li>
-                ))}
-              </ul>
-              <a href="/affiliation" className="inline-block bg-emerald-600 text-white px-8 py-4 rounded-xl text-lg font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-100">
-                Rejoindre le programme →
-              </a>
-            </div>
-            <div className="flex-shrink-0 grid grid-cols-2 gap-4 w-full md:w-72">
-              {[
-                { clients: 1, gain: '15€' },
-                { clients: 5, gain: '75€' },
-                { clients: 10, gain: '150€' },
-                { clients: 10, gain: '150€/mois', label: 'max' },
-              ].map((s, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm text-center">
-                  <p className="text-2xl font-bold text-emerald-600">{s.gain}</p>
-                  <p className="text-xs text-gray-500 mt-2">{s.clients} client{s.clients > 1 ? 's' : ''} {s.label || 'apporté' + (s.clients > 1 ? 's' : '')}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Tarif */}
       <section id="tarif" className="py-20 px-6 bg-gray-50">
         <div className="max-w-lg mx-auto text-center">
@@ -254,7 +193,7 @@ export default function Home() {
           <p className="text-gray-500 text-lg mb-12">Pas de surprise, pas de frais cachés</p>
           <div className="bg-blue-600 rounded-2xl p-8 relative">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-sm font-bold px-6 py-2 rounded-full whitespace-nowrap">
-              🎉 1er mois gratuit
+              🎉 7 jours gratuits — aucun engagement
             </div>
             <h3 className="text-2xl font-bold text-white mb-2 mt-4">Plan unique</h3>
             <p className="text-6xl font-bold text-white mb-1">24,99€</p>
@@ -274,9 +213,13 @@ export default function Home() {
               ))}
             </ul>
             <a href="/register" className="block text-center bg-white text-blue-600 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition">
-              Commencer — 1 mois gratuit →
+              Commencer — 7 jours gratuits →
             </a>
-            <p className="text-blue-300 text-xs mt-4">Résiliation possible à tout moment · Carte bancaire requise</p>
+            <div className="flex justify-center gap-4 mt-4 text-blue-300 text-xs flex-wrap">
+              <span>✅ Aucun engagement</span>
+              <span>✅ Annulation en 1 clic</span>
+              <span>✅ Aucun frais pendant 7 jours</span>
+            </div>
           </div>
         </div>
       </section>
@@ -314,9 +257,13 @@ export default function Home() {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Prêt à gagner du temps ?</h2>
           <p className="text-blue-200 text-lg mb-8">Rejoignez les artisans qui créent leurs devis en 60 secondes</p>
           <a href="/register" className="inline-block bg-white text-blue-600 px-10 py-4 rounded-xl text-lg font-bold hover:bg-blue-50 transition">
-            Commencer — 1 mois gratuit →
+            Commencer — 7 jours gratuits →
           </a>
-          <p className="text-blue-300 text-sm mt-4">Carte bancaire requise · Résiliation libre</p>
+          <div className="flex justify-center gap-4 mt-4 text-blue-300 text-sm flex-wrap">
+            <span>✅ Aucun engagement</span>
+            <span>✅ Annulation en 1 clic</span>
+            <span>✅ Aucun frais pendant 7 jours</span>
+          </div>
         </div>
       </section>
 
@@ -329,7 +276,6 @@ export default function Home() {
               <p className="text-gray-400 text-sm">Devis professionnels pour artisans</p>
             </div>
             <div className="flex gap-6 text-sm text-gray-400 flex-wrap justify-center">
-              <a href="/affiliation" className="hover:text-white transition font-semibold text-emerald-400">Programme partenaires</a>
               <a href="/legal/cgu" className="hover:text-white transition">CGU</a>
               <a href="/legal/confidentialite" className="hover:text-white transition">Confidentialité</a>
               <a href="/legal/mentions" className="hover:text-white transition">Mentions légales</a>
