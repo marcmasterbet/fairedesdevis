@@ -106,6 +106,33 @@ export default function Home() {
         </div>
       </section>
 
+{/* Preuve sociale — marché */}
+<section className="py-10 px-6 bg-white border-b border-gray-100">
+  <div className="max-w-5xl mx-auto">
+    <p className="text-center text-gray-400 text-xs font-semibold uppercase tracking-widest mb-8">
+      Pourquoi FaireDesDevis ?
+    </p>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <div>
+        <p className="text-3xl font-bold text-blue-600">3M+</p>
+        <p className="text-gray-500 text-sm mt-1">artisans en France font encore leurs devis à la main</p>
+      </div>
+      <div>
+        <p className="text-3xl font-bold text-blue-600">60s</p>
+        <p className="text-gray-500 text-sm mt-1">pour créer un devis professionnel complet avec l'IA</p>
+      </div>
+      <div>
+        <p className="text-3xl font-bold text-blue-600">100%</p>
+        <p className="text-gray-500 text-sm mt-1">légal — signature électronique conforme eIDAS</p>
+      </div>
+      <div>
+        <p className="text-3xl font-bold text-blue-600">0€</p>
+        <p className="text-gray-500 text-sm mt-1">pendant 30 jours — aucun engagement, annulation libre</p>
+      </div>
+    </div>
+  </div>
+</section>
+
       {/* Stats */}
       <section className="py-12 px-6 bg-blue-600">
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
