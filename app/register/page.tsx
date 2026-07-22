@@ -27,7 +27,6 @@ export default function Register() {
 
   const strength = getPasswordStrength(password)
 
-  // Lire le code affilié depuis le cookie
   const getRefCookie = () => {
     const match = document.cookie.match(/fairedesdevis_ref=([^;]+)/)
     return match ? match[1] : null
@@ -75,7 +74,6 @@ export default function Register() {
       return
     }
 
-    // Si parrainé, enregistrer dans la table filleuls
     if (refCode && data.user) {
       await supabase.from('filleuls').insert({
         user_id: data.user.id,
@@ -122,7 +120,16 @@ export default function Register() {
       <div className="bg-white rounded-2xl shadow p-8 w-full max-w-md">
         <a href="/" className="text-blue-600 font-bold text-xl">FaireDesDevis</a>
         <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Créer votre compte</h2>
-        <p className="text-gray-500 text-sm mb-6">1 mois gratuit — carte bancaire requise, aucun prélèvement pendant 30 jours</p>
+
+        {/* Message rassurant */}
+        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-6">
+          <p className="text-blue-700 text-sm font-semibold mb-1">🎉 30 jours pour créer autant de devis que vous voulez</p>
+          <div className="space-y-0.5">
+            <p className="text-blue-600 text-xs">✅ Aucun engagement</p>
+            <p className="text-blue-600 text-xs">✅ Annulation en 1 clic avant la fin de l'essai</p>
+            <p className="text-blue-600 text-xs">✅ Aucun frais pendant 30 jours</p>
+          </div>
+        </div>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
@@ -200,7 +207,7 @@ export default function Register() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
           >
-            {loading ? 'Création en cours...' : 'Créer mon compte gratuitement →'}
+            {loading ? 'Création en cours...' : 'Commencer mes 30 jours gratuits →'}
           </button>
         </div>
 
