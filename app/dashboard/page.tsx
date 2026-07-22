@@ -92,7 +92,6 @@ export default function Dashboard() {
         if (!composantActif) return
         setUser(utilisateurConnecte)
 
-        // Vérifier si parrain approuvé
         const { data: parrainData } = await supabase
           .from('parrains')
           .select('id, code, statut')
@@ -102,13 +101,10 @@ export default function Dashboard() {
 
         if (composantActif && parrainData) {
           setParrain(parrainData)
-
-          // Charger ses filleuls
           const { data: filleulsData } = await supabase
             .from('filleuls')
             .select('*')
             .eq('ref_code', parrainData.code)
-
           if (composantActif) setFilleuls(filleulsData || [])
         }
 
@@ -155,11 +151,8 @@ export default function Dashboard() {
 
   const copierLien = async () => {
     if (!parrain) return
-
     try {
-      await navigator.clipboard.writeText(
-        `https://fairedesdevis.fr/?ref=${parrain.code}`
-      )
+      await navigator.clipboard.writeText(`https://fairedesdevis.fr/?ref=${parrain.code}`)
       setCopie(true)
       window.setTimeout(() => setCopie(false), 2000)
     } catch (error) {
@@ -201,8 +194,9 @@ export default function Dashboard() {
   const derniersDevis = devis.slice(0, 5)
   const dernieresFactures = factures.slice(0, 5)
 
-  const filleulsActifs = filleuls.filter((f) => f.commission_active).length
-  const gainsMois = filleulsActifs * 4
+  // 15€ par client validé (commission_active)
+  const clientsValides = filleuls.filter((f) => f.commission_active).length
+  const gainsTotal = clientsValides * 15
 
   const getStatutStyle = (statut: string) => {
     switch (statut) {
@@ -315,6 +309,7 @@ export default function Dashboard() {
             <p className="text-2xl font-bold text-green-600">{formaterMontant(montantPaye)}</p>
             <p className="mt-1 text-xs text-gray-500">Factures payées</p>
           </button>
+          
           <a
             href="/dashboard/factures"
             className="flex items-center justify-center rounded-xl border border-gray-200 bg-white p-4 transition hover:border-blue-300"
@@ -429,8 +424,8 @@ export default function Dashboard() {
         <div className="rounded-xl border border-emerald-200 bg-white overflow-hidden">
           <div className="flex items-center justify-between border-b border-emerald-100 bg-emerald-50 px-6 py-4">
             <div>
-              <h2 className="font-semibold text-gray-900">🤝 Programme Apporteurs d’affaires</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Gagnez 4 €/mois par client actif apporté</p>
+              <h2 className="font-semibold text-gray-900">🤝 Programme Apporteurs d'affaires</h2>
+              <p className="text-xs text-gray-500 mt-0.5">15€ par client validé — max 10 clients/mois</p>
             </div>
             {parrain && (
               <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full">
@@ -441,28 +436,27 @@ export default function Dashboard() {
 
           <div className="p-6">
             {parrain ? (
-              // Parrain approuvé — affiche ses stats
               <div className="space-y-6">
 
-                {/* Statistiques d’apporteur d’affaires */}
+                {/* Stats */}
                 <div className="grid grid-cols-3 gap-4">
                   <div className="rounded-xl bg-gray-50 p-4 text-center">
                     <p className="text-2xl font-bold text-gray-900">{filleuls.length}</p>
                     <p className="text-xs text-gray-500 mt-1">Clients apportés</p>
                   </div>
                   <div className="rounded-xl bg-gray-50 p-4 text-center">
-                    <p className="text-2xl font-bold text-emerald-600">{filleulsActifs}</p>
-                    <p className="text-xs text-gray-500 mt-1">Abonnements actifs</p>
+                    <p className="text-2xl font-bold text-emerald-600">{clientsValides}</p>
+                    <p className="text-xs text-gray-500 mt-1">Clients validés</p>
                   </div>
                   <div className="rounded-xl bg-emerald-600 p-4 text-center">
-                    <p className="text-2xl font-bold text-white">{gainsMois}€</p>
-                    <p className="text-xs text-emerald-200 mt-1">Gains ce mois</p>
+                    <p className="text-2xl font-bold text-white">{gainsTotal}€</p>
+                    <p className="text-xs text-emerald-200 mt-1">Gains totaux</p>
                   </div>
                 </div>
 
-                {/* Lien d’apporteur d’affaires */}
+                {/* Lien */}
                 <div>
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Votre lien d’apporteur</p>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Votre lien d'apporteur</p>
                   <div className="flex gap-2 items-center">
                     <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 font-mono truncate">
                       fairedesdevis.fr/?ref={parrain.code}
@@ -475,10 +469,10 @@ export default function Dashboard() {
                       {copie ? '✓ Copié !' : 'Copier'}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">Partagez ce lien : chaque client actif apporté vous rapporte 4 €/mois</p>
+                  <p className="text-xs text-gray-400 mt-2">Chaque client validé vous rapporte <strong className="text-emerald-600">15€</strong> — versé le 5 du mois suivant la validation</p>
                 </div>
 
-                {/* Derniers clients apportés */}
+                {/* Derniers clients */}
                 {filleuls.length > 0 && (
                   <div>
                     <p className="text-sm font-semibold text-gray-700 mb-2">Vos derniers clients apportés</p>
@@ -490,7 +484,7 @@ export default function Dashboard() {
                             <p className="text-xs text-gray-400">Inscrit le {formaterDate(f.created_at)}</p>
                           </div>
                           <span className={`text-xs font-semibold px-2 py-1 rounded-full ${f.commission_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {f.commission_active ? '✓ Actif' : 'En attente'}
+                            {f.commission_active ? '✓ Validé — 15€' : 'En attente'}
                           </span>
                         </div>
                       ))}
@@ -500,16 +494,16 @@ export default function Dashboard() {
 
               </div>
             ) : (
-              // Pas encore apporteur
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <div className="flex-1">
                   <p className="text-gray-600 text-sm leading-relaxed mb-2">
-                    <span className="font-semibold text-gray-900">Vous n’êtes pas encore apporteur d’affaires.</span>
+                    <span className="font-semibold text-gray-900">Vous n'êtes pas encore apporteur d'affaires.</span>
                     {' '}Vous connaissez des artisans, plombiers, électriciens ou indépendants ?
-                    Recommandez-leur FaireDesDevis et touchez <strong className="text-emerald-600">4 €/mois</strong> par client actif apporté — sans limite.
+                    Recommandez-leur FaireDesDevis et touchez <strong className="text-emerald-600">15€</strong> par client validé — max 10 par mois.
                   </p>
-                  <p className="text-xs text-gray-400">Gratuit · Sans engagement · Virement mensuel</p>
+                  <p className="text-xs text-gray-400">Gratuit · Sans engagement · Virement le 5 du mois</p>
                 </div>
+                
                 <a
                   href="/affiliation/rejoindre"
                   className="flex-shrink-0 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-emerald-700 transition whitespace-nowrap"
