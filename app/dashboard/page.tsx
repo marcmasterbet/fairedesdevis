@@ -30,19 +30,6 @@ interface Facture {
   created_at: string
 }
 
-interface Parrain {
-  id: string
-  code: string
-  statut: string
-}
-
-interface Filleul {
-  id: string
-  email: string
-  created_at: string
-  commission_active: boolean
-}
-
 export default function Dashboard() {
   const router = useRouter()
 
@@ -50,9 +37,7 @@ export default function Dashboard() {
   const [devis, setDevis] = useState<Devis[]>([])
   const [factures, setFactures] = useState<Facture[]>([])
   const [loading, setLoading] = useState(true)
-  const [parrain, setParrain] = useState<Parrain | null>(null)
-  const [filleuls, setFilleuls] = useState<Filleul[]>([])
-  const [copie, setCopie] = useState(false)
+  const [joursRestants, setJoursRestants] = useState<number | null>(null)
 
   useEffect(() => {
     let composantActif = true
@@ -82,7 +67,7 @@ export default function Dashboard() {
         const joursDepuisInscription = Math.floor(
           (maintenant.getTime() - dateInscription.getTime()) / (1000 * 60 * 60 * 24)
         )
-        const essaiValide = joursDepuisInscription >= 0 && joursDepuisInscription <= 30
+        const essaiValide = joursDepuisInscription >= 0 && joursDepuisInscription <= 7
 
         if (!estVIP && !abonnementActif && !essaiValide) {
           router.replace('/abonnement')
@@ -92,20 +77,8 @@ export default function Dashboard() {
         if (!composantActif) return
         setUser(utilisateurConnecte)
 
-        const { data: parrainData } = await supabase
-          .from('parrains')
-          .select('id, code, statut')
-          .eq('email', utilisateurConnecte.email)
-          .eq('statut', 'approuve')
-          .maybeSingle()
-
-        if (composantActif && parrainData) {
-          setParrain(parrainData)
-          const { data: filleulsData } = await supabase
-            .from('filleuls')
-            .select('*')
-            .eq('ref_code', parrainData.code)
-          if (composantActif) setFilleuls(filleulsData || [])
+        if (!abonnementActif && !estVIP && essaiValide) {
+          setJoursRestants(7 - joursDepuisInscription)
         }
 
         const [resultatDevis, resultatFactures] = await Promise.all([
@@ -149,17 +122,6 @@ export default function Dashboard() {
     }
   }
 
-  const copierLien = async () => {
-    if (!parrain) return
-    try {
-      await navigator.clipboard.writeText(`https://fairedesdevis.fr/?ref=${parrain.code}`)
-      setCopie(true)
-      window.setTimeout(() => setCopie(false), 2000)
-    } catch (error) {
-      console.error('Impossible de copier le lien :', error)
-    }
-  }
-
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -193,10 +155,6 @@ export default function Dashboard() {
 
   const derniersDevis = devis.slice(0, 5)
   const dernieresFactures = factures.slice(0, 5)
-
-  // 15€ par client validé (commission_active)
-  const clientsValides = filleuls.filter((f) => f.commission_active).length
-  const gainsTotal = clientsValides * 15
 
   const getStatutStyle = (statut: string) => {
     switch (statut) {
@@ -262,6 +220,27 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Bonjour {nom} 👋</h1>
           {metier && <p className="mt-1 text-sm text-gray-500">{metier}</p>}
         </div>
+
+        {/* Bannière essai */}
+        {joursRestants !== null && (
+          <div className={`mb-6 rounded-xl px-6 py-4 flex items-center justify-between gap-4 ${joursRestants <= 2 ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
+            <div>
+              <p className={`font-semibold text-sm ${joursRestants <= 2 ? 'text-red-700' : 'text-amber-700'}`}>
+                ⏳ Il vous reste <strong>{joursRestants} jour{joursRestants > 1 ? 's' : ''}</strong> d'essai gratuit
+              </p>
+              <p className={`text-xs mt-0.5 ${joursRestants <= 2 ? 'text-red-600' : 'text-amber-600'}`}>
+                Passez à l'abonnement pour continuer à utiliser FaireDesDevis après l'essai.
+              </p>
+            </div>
+            
+            <a
+              href="/abonnement"
+              className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition ${joursRestants <= 2 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
+            >
+              S'abonner →
+            </a>
+          </div>
+        )}
 
         {/* Statistiques des devis */}
         <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -380,7 +359,7 @@ export default function Dashboard() {
         </div>
 
         {/* Dernières factures */}
-        <div className="mb-8 rounded-xl border border-gray-200 bg-white">
+        <div className="rounded-xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
             <h2 className="font-semibold text-gray-900">Dernières factures</h2>
             <a href="/dashboard/factures" className="text-sm text-blue-600 hover:underline">Voir toutes →</a>
@@ -415,101 +394,6 @@ export default function Dashboard() {
                     </div>
                   </button>
                 ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Section parrainage — visible par tous */}
-        <div className="rounded-xl border border-emerald-200 bg-white overflow-hidden">
-          <div className="flex items-center justify-between border-b border-emerald-100 bg-emerald-50 px-6 py-4">
-            <div>
-              <h2 className="font-semibold text-gray-900">🤝 Programme Apporteurs d'affaires</h2>
-              <p className="text-xs text-gray-500 mt-0.5">15€ par client validé — max 10 clients/mois</p>
-            </div>
-            {parrain && (
-              <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full">
-                ✓ Apporteur actif
-              </span>
-            )}
-          </div>
-
-          <div className="p-6">
-            {parrain ? (
-              <div className="space-y-6">
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="rounded-xl bg-gray-50 p-4 text-center">
-                    <p className="text-2xl font-bold text-gray-900">{filleuls.length}</p>
-                    <p className="text-xs text-gray-500 mt-1">Clients apportés</p>
-                  </div>
-                  <div className="rounded-xl bg-gray-50 p-4 text-center">
-                    <p className="text-2xl font-bold text-emerald-600">{clientsValides}</p>
-                    <p className="text-xs text-gray-500 mt-1">Clients validés</p>
-                  </div>
-                  <div className="rounded-xl bg-emerald-600 p-4 text-center">
-                    <p className="text-2xl font-bold text-white">{gainsTotal}€</p>
-                    <p className="text-xs text-emerald-200 mt-1">Gains totaux</p>
-                  </div>
-                </div>
-
-                {/* Lien */}
-                <div>
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Votre lien d'apporteur</p>
-                  <div className="flex gap-2 items-center">
-                    <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 font-mono truncate">
-                      fairedesdevis.fr/?ref={parrain.code}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={copierLien}
-                      className="bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition whitespace-nowrap"
-                    >
-                      {copie ? '✓ Copié !' : 'Copier'}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">Chaque client validé vous rapporte <strong className="text-emerald-600">15€</strong> — versé le 5 du mois suivant la validation</p>
-                </div>
-
-                {/* Derniers clients */}
-                {filleuls.length > 0 && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700 mb-2">Vos derniers clients apportés</p>
-                    <div className="space-y-2">
-                      {filleuls.slice(0, 3).map((f, i) => (
-                        <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                          <div>
-                            <p className="text-sm text-gray-700">{f.email}</p>
-                            <p className="text-xs text-gray-400">Inscrit le {formaterDate(f.created_at)}</p>
-                          </div>
-                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${f.commission_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {f.commission_active ? '✓ Validé — 15€' : 'En attente'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            ) : (
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="flex-1">
-                  <p className="text-gray-600 text-sm leading-relaxed mb-2">
-                    <span className="font-semibold text-gray-900">Vous n'êtes pas encore apporteur d'affaires.</span>
-                    {' '}Vous connaissez des artisans, plombiers, électriciens ou indépendants ?
-                    Recommandez-leur FaireDesDevis et touchez <strong className="text-emerald-600">15€</strong> par client validé — max 10 par mois.
-                  </p>
-                  <p className="text-xs text-gray-400">Gratuit · Sans engagement · Virement le 5 du mois</p>
-                </div>
-                
-                <a
-                  href="/affiliation/rejoindre"
-                  className="flex-shrink-0 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-emerald-700 transition whitespace-nowrap"
-                >
-                  Devenir apporteur →
-                </a>
               </div>
             )}
           </div>
