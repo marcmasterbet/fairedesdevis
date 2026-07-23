@@ -62,14 +62,12 @@ export default function FacturePage({ params }: { params: Promise<{ id: string }
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        devisId: id,
         clientEmail: facture.client_email,
         clientNom: facture.client_nom,
         prestataireNom: prestaNom,
         numero: facture.numero,
         montantTTC: Number(facture.montant_ttc).toFixed(2),
-        lienSignature: 'https://fairedesdevis.fr/dashboard/factures/' + id,
-        isFacture: true
+        lienFacture: 'https://fairedesdevis.fr/dashboard/factures/' + id,
       })
     })
 
