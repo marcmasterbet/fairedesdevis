@@ -58,7 +58,7 @@ export default function FacturePage({ params }: { params: Promise<{ id: string }
     const { data: { user } } = await supabase.auth.getUser()
     const prestaNom = user?.user_metadata?.['nom'] || ''
 
-    await fetch('/api/envoyer-devis', {
+    await fetch('/api/envoyer-facture', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
