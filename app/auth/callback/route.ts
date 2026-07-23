@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import Stripe from 'stripe'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -15,21 +18,34 @@ export async function GET(request: NextRequest) {
     const user = data?.user
 
     if (user) {
-      // Créer une session Stripe checkout avec trial 7 jours
-      const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/stripe/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, email: user.email })
-      })
+      try {
+        const session = await stripe.checkout.sessions.create({
+          mode: 'subscription',
+          payment_method_types: ['card'],
+          customer_email: user.email,
+          line_items: [
+            {
+              price: process.env.STRIPE_PRICE_ID!,
+              quantity: 1,
+            }
+          ],
+          subscription_data: {
+            trial_period_days: 7,
+            metadata: { userId: user.id }
+          },
+          metadata: { userId: user.id },
+          success_url: 'https://fairedesdevis.fr/dashboard?abonnement=success',
+          cancel_url: 'https://fairedesdevis.fr/abonnement?cancel=true',
+        })
 
-      const stripeData = await res.json()
-
-      if (stripeData.url) {
-        return NextResponse.redirect(stripeData.url)
+        if (session.url) {
+          return NextResponse.redirect(session.url)
+        }
+      } catch (error) {
+        console.error('Erreur Stripe:', error)
       }
     }
   }
 
-  // Fallback si erreur
   return NextResponse.redirect(new URL('/login', request.url))
 }
