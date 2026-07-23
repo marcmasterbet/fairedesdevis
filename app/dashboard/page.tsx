@@ -54,47 +54,98 @@ export default function Dashboard() {
         } = await supabase.auth.getUser()
 
         if (erreurUtilisateur) throw erreurUtilisateur
-        if (!utilisateurConnecte) { router.replace('/login'); return }
+
+        if (!utilisateurConnecte) {
+          router.replace('/login')
+          return
+        }
 
         const metadata = utilisateurConnecte.user_metadata ?? {}
         const estVIP = metadata.actif_manuellement === true
-        const statutStripe = String(metadata.stripe_statut ?? '').toLowerCase()
+        const statutStripe = String(
+          metadata.stripe_statut ?? ''
+        ).toLowerCase()
+
         const abonnementActif =
           metadata.abonnement_actif === true ||
           statutStripe === 'trialing' ||
           statutStripe === 'active' ||
           statutStripe === 'actif'
+
+        // Vérifier essai local (avant Stripe)
         const dateInscription = new Date(utilisateurConnecte.created_at)
         const maintenant = new Date()
-        const joursDepuisInscription = Math.floor(
-          (maintenant.getTime() - dateInscription.getTime()) / (1000 * 60 * 60 * 24)
-        )
-        const essaiValide = joursDepuisInscription >= 0 && joursDepuisInscription <= 7
 
-        if (!estVIP && !abonnementActif && !essaiValide) {
+        const joursDepuisInscription = Math.floor(
+          (maintenant.getTime() - dateInscription.getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+
+        const essaiLocalValide =
+          joursDepuisInscription >= 0 && joursDepuisInscription <= 7
+
+        if (!estVIP && !abonnementActif && !essaiLocalValide) {
           router.replace('/abonnement')
           return
         }
 
         if (!composantActif) return
+
         setUser(utilisateurConnecte)
 
-        if (!abonnementActif && !estVIP && essaiValide) {
+        // Bannière essai — basée sur trial_end Stripe
+        if (metadata.trial_end) {
+          const trialEnd = new Date(metadata.trial_end)
+
+          if (trialEnd > maintenant) {
+            const jours = Math.ceil(
+              (trialEnd.getTime() - maintenant.getTime()) /
+                (1000 * 60 * 60 * 24)
+            )
+
+            setJoursRestants(jours)
+
+            setDateFinEssai(
+              trialEnd.toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })
+            )
+          }
+        } else if (!abonnementActif && essaiLocalValide) {
+          // Pas encore de Stripe — essai local
           const jours = 7 - joursDepuisInscription
+
           setJoursRestants(jours)
-          const dateFin = new Date(dateInscription.getTime() + 7 * 24 * 60 * 60 * 1000)
-          setDateFinEssai(dateFin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))
+
+          const dateFin = new Date(
+            dateInscription.getTime() + 7 * 24 * 60 * 60 * 1000
+          )
+
+          setDateFinEssai(
+            dateFin.toLocaleDateString('fr-FR', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })
+          )
         }
 
         const [resultatDevis, resultatFactures] = await Promise.all([
           supabase
             .from('devis')
-            .select('id, user_id, numero, client_nom, montant_ttc, statut, created_at, archive')
+            .select(
+              'id, user_id, numero, client_nom, montant_ttc, statut, created_at, archive'
+            )
             .eq('user_id', utilisateurConnecte.id)
             .order('created_at', { ascending: false }),
+
           supabase
             .from('factures')
-            .select('id, user_id, numero, client_nom, montant_ttc, statut, date_echeance, created_at')
+            .select(
+              'id, user_id, numero, client_nom, montant_ttc, statut, date_echeance, created_at'
+            )
             .eq('user_id', utilisateurConnecte.id)
             .order('created_at', { ascending: false }),
         ])
@@ -106,20 +157,28 @@ export default function Dashboard() {
         setDevis((resultatDevis.data as Devis[] | null) ?? [])
         setFactures((resultatFactures.data as Facture[] | null) ?? [])
       } catch (error) {
-        console.error('Erreur lors du chargement du dashboard :', error)
+        console.error(
+          'Erreur lors du chargement du dashboard :',
+          error
+        )
       } finally {
         if (composantActif) setLoading(false)
       }
     }
 
     void initialiserDashboard()
-    return () => { composantActif = false }
+
+    return () => {
+      composantActif = false
+    }
   }, [router])
 
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut()
+
       if (error) throw error
+
       router.replace('/')
       router.refresh()
     } catch (error) {
@@ -129,27 +188,47 @@ export default function Dashboard() {
 
   const ouvrirPortailStripe = async () => {
     setPortalLoading(true)
+
     const customerId = user?.user_metadata?.stripe_customer_id
 
     if (!customerId) {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?.id, email: user?.email })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          email: user?.email,
+        }),
       })
+
       const data = await res.json()
-      if (data.url) window.location.href = data.url
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+
       setPortalLoading(false)
       return
     }
 
     const res = await fetch('/api/stripe/portal', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId })
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        customerId,
+      }),
     })
+
     const data = await res.json()
-    if (data.url) window.location.href = data.url
+
+    if (data.url) {
+      window.location.href = data.url
+    }
+
     setPortalLoading(false)
   }
 
@@ -162,70 +241,120 @@ export default function Dashboard() {
   }
 
   const nom =
-    typeof user?.user_metadata?.nom === 'string' && user.user_metadata.nom.trim() !== ''
+    typeof user?.user_metadata?.nom === 'string' &&
+    user.user_metadata.nom.trim() !== ''
       ? user.user_metadata.nom
       : 'Utilisateur'
 
   const metier =
-    typeof user?.user_metadata?.metier === 'string' ? user.user_metadata.metier : ''
+    typeof user?.user_metadata?.metier === 'string'
+      ? user.user_metadata.metier
+      : ''
 
   const maintenant = new Date()
 
   const devisCeMois = devis.filter((d) => {
     const date = new Date(d.created_at)
-    return date.getMonth() === maintenant.getMonth() && date.getFullYear() === maintenant.getFullYear()
-  })
-  const devisAcceptes = devis.filter((d) => d.statut === 'accepte' && d.archive !== true)
-  const devisEnAttente = devis.filter((d) => d.statut === 'envoye' && d.archive !== true)
-  const montantTotalAccepte = devisAcceptes.reduce((t, d) => t + Number(d.montant_ttc || 0), 0)
 
-  const facturesEnAttente = factures.filter((f) => f.statut === 'en_attente')
-  const facturesPayees = factures.filter((f) => f.statut === 'payee')
-  const montantEnAttente = facturesEnAttente.reduce((t, f) => t + Number(f.montant_ttc || 0), 0)
-  const montantPaye = facturesPayees.reduce((t, f) => t + Number(f.montant_ttc || 0), 0)
+    return (
+      date.getMonth() === maintenant.getMonth() &&
+      date.getFullYear() === maintenant.getFullYear()
+    )
+  })
+
+  const devisAcceptes = devis.filter(
+    (d) => d.statut === 'accepte' && d.archive !== true
+  )
+
+  const devisEnAttente = devis.filter(
+    (d) => d.statut === 'envoye' && d.archive !== true
+  )
+
+  const montantTotalAccepte = devisAcceptes.reduce(
+    (t, d) => t + Number(d.montant_ttc || 0),
+    0
+  )
+
+  const facturesEnAttente = factures.filter(
+    (f) => f.statut === 'en_attente'
+  )
+
+  const facturesPayees = factures.filter(
+    (f) => f.statut === 'payee'
+  )
+
+  const montantEnAttente = facturesEnAttente.reduce(
+    (t, f) => t + Number(f.montant_ttc || 0),
+    0
+  )
+
+  const montantPaye = facturesPayees.reduce(
+    (t, f) => t + Number(f.montant_ttc || 0),
+    0
+  )
 
   const derniersDevis = devis.slice(0, 5)
   const dernieresFactures = factures.slice(0, 5)
 
   const getStatutStyle = (statut: string) => {
     switch (statut) {
-      case 'accepte': return 'bg-green-100 text-green-700'
-      case 'refuse': return 'bg-red-100 text-red-700'
-      case 'envoye': return 'bg-blue-100 text-blue-700'
-      default: return 'bg-gray-100 text-gray-600'
+      case 'accepte':
+        return 'bg-green-100 text-green-700'
+      case 'refuse':
+        return 'bg-red-100 text-red-700'
+      case 'envoye':
+        return 'bg-blue-100 text-blue-700'
+      default:
+        return 'bg-gray-100 text-gray-600'
     }
   }
 
   const getDevisStatutLabel = (statut: string) => {
     switch (statut) {
-      case 'accepte': return 'Accepté'
-      case 'refuse': return 'Refusé'
-      case 'envoye': return 'Envoyé'
-      case 'brouillon': return 'Brouillon'
-      default: return statut
+      case 'accepte':
+        return 'Accepté'
+      case 'refuse':
+        return 'Refusé'
+      case 'envoye':
+        return 'Envoyé'
+      case 'brouillon':
+        return 'Brouillon'
+      default:
+        return statut
     }
   }
 
   const getFactureStatutStyle = (statut: string) => {
     switch (statut) {
-      case 'payee': return 'bg-green-100 text-green-700'
-      case 'en_retard': return 'bg-red-100 text-red-700'
-      case 'en_attente': return 'bg-amber-100 text-amber-700'
-      default: return 'bg-gray-100 text-gray-600'
+      case 'payee':
+        return 'bg-green-100 text-green-700'
+      case 'en_retard':
+        return 'bg-red-100 text-red-700'
+      case 'en_attente':
+        return 'bg-amber-100 text-amber-700'
+      default:
+        return 'bg-gray-100 text-gray-600'
     }
   }
 
   const getFactureStatutLabel = (statut: string) => {
     switch (statut) {
-      case 'payee': return 'Payée'
-      case 'en_retard': return 'En retard'
-      case 'en_attente': return 'En attente'
-      default: return statut
+      case 'payee':
+        return 'Payée'
+      case 'en_retard':
+        return 'En retard'
+      case 'en_attente':
+        return 'En attente'
+      default:
+        return statut
     }
   }
 
   const formaterMontant = (montant: number) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(montant || 0))
+    new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(Number(montant || 0))
 
   const formaterDate = (date: string) =>
     new Date(date).toLocaleDateString('fr-FR')
@@ -245,30 +374,69 @@ export default function Dashboard() {
       />
 
       <div className="mx-auto max-w-5xl px-6 py-8 pb-24">
-
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Bonjour {nom} 👋</h1>
-          {metier && <p className="mt-1 text-sm text-gray-500">{metier}</p>}
+          <h1 className="text-2xl font-bold text-gray-900">
+            Bonjour {nom} 👋
+          </h1>
+
+          {metier && (
+            <p className="mt-1 text-sm text-gray-500">
+              {metier}
+            </p>
+          )}
         </div>
 
         {/* Bannière essai */}
         {joursRestants !== null && (
-          <div className={`mb-6 rounded-xl px-6 py-4 border ${joursRestants <= 2 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
-            <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div
+            className={`mb-6 rounded-xl border px-6 py-4 ${
+              joursRestants <= 2
+                ? 'border-red-200 bg-red-50'
+                : 'border-amber-200 bg-amber-50'
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className={`font-semibold text-sm ${joursRestants <= 2 ? 'text-red-700' : 'text-amber-700'}`}>
-                  ⏳ Essai gratuit — il vous reste <strong>{joursRestants} jour{joursRestants > 1 ? 's' : ''}</strong>
+                <p
+                  className={`text-sm font-semibold ${
+                    joursRestants <= 2
+                      ? 'text-red-700'
+                      : 'text-amber-700'
+                  }`}
+                >
+                  ⏳ Période d'essai — il vous reste{' '}
+                  <strong>
+                    {joursRestants} jour
+                    {joursRestants > 1 ? 's' : ''}
+                  </strong>
                 </p>
-                <p className={`text-xs mt-1 ${joursRestants <= 2 ? 'text-red-600' : 'text-amber-600'}`}>
-                  ⚠️ Votre essai se termine le <strong>{dateFinEssai}</strong>. Résiliez avant cette date pour ne pas être débité.
+
+                <p
+                  className={`mt-1 text-xs ${
+                    joursRestants <= 2
+                      ? 'text-red-600'
+                      : 'text-amber-600'
+                  }`}
+                >
+                  ⚠️ Votre essai se termine le{' '}
+                  <strong>{dateFinEssai}</strong>. Résiliez avant
+                  cette date pour ne pas être débité.
                 </p>
               </div>
+
               <button
+                type="button"
                 onClick={ouvrirPortailStripe}
                 disabled={portalLoading}
-                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition disabled:opacity-50 ${joursRestants <= 2 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
+                className={`flex-shrink-0 rounded-lg px-4 py-2 text-sm font-bold transition disabled:opacity-50 ${
+                  joursRestants <= 2
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-amber-500 text-white hover:bg-amber-600'
+                }`}
               >
-                {portalLoading ? 'Chargement...' : 'Gérer mon abonnement →'}
+                {portalLoading
+                  ? 'Chargement...'
+                  : 'Gérer mon abonnement →'}
               </button>
             </div>
           </div>
@@ -277,28 +445,55 @@ export default function Dashboard() {
         {/* Stats devis */}
         <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-2xl font-bold text-gray-900">{devisCeMois.length}</p>
-            <p className="mt-1 text-xs text-gray-500">Devis ce mois</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {devisCeMois.length}
+            </p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Devis ce mois
+            </p>
           </div>
+
           <button
             type="button"
-            onClick={() => router.push('/dashboard/devis?statut=accepte')}
+            onClick={() =>
+              router.push('/dashboard/devis?statut=accepte')
+            }
             className="rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-green-300 hover:bg-green-50"
           >
-            <p className="text-2xl font-bold text-green-600">{devisAcceptes.length}</p>
-            <p className="mt-1 text-xs text-gray-500">Acceptés</p>
+            <p className="text-2xl font-bold text-green-600">
+              {devisAcceptes.length}
+            </p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Acceptés
+            </p>
           </button>
+
           <button
             type="button"
-            onClick={() => router.push('/dashboard/devis?statut=envoye')}
+            onClick={() =>
+              router.push('/dashboard/devis?statut=envoye')
+            }
             className="rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-blue-300 hover:bg-blue-50"
           >
-            <p className="text-2xl font-bold text-blue-600">{devisEnAttente.length}</p>
-            <p className="mt-1 text-xs text-gray-500">En attente</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {devisEnAttente.length}
+            </p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              En attente
+            </p>
           </button>
+
           <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-2xl font-bold text-gray-900">{formaterMontant(montantTotalAccepte)}</p>
-            <p className="mt-1 text-xs text-gray-500">Montant accepté</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {formaterMontant(montantTotalAccepte)}
+            </p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Montant accepté
+            </p>
           </div>
         </div>
 
@@ -306,60 +501,116 @@ export default function Dashboard() {
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3">
           <button
             type="button"
-            onClick={() => router.push('/dashboard/factures?statut=en_attente')}
+            onClick={() =>
+              router.push('/dashboard/factures?statut=en_attente')
+            }
             className="rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-amber-300 hover:bg-amber-50"
           >
-            <p className="text-2xl font-bold text-amber-600">{formaterMontant(montantEnAttente)}</p>
-            <p className="mt-1 text-xs text-gray-500">Factures en attente</p>
+            <p className="text-2xl font-bold text-amber-600">
+              {formaterMontant(montantEnAttente)}
+            </p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Factures en attente
+            </p>
           </button>
+
           <button
             type="button"
-            onClick={() => router.push('/dashboard/factures?statut=payee')}
+            onClick={() =>
+              router.push('/dashboard/factures?statut=payee')
+            }
             className="rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-green-300 hover:bg-green-50"
           >
-            <p className="text-2xl font-bold text-green-600">{formaterMontant(montantPaye)}</p>
-            <p className="mt-1 text-xs text-gray-500">Factures payées</p>
+            <p className="text-2xl font-bold text-green-600">
+              {formaterMontant(montantPaye)}
+            </p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Factures payées
+            </p>
           </button>
+
           <a
             href="/dashboard/factures"
             className="flex items-center justify-center rounded-xl border border-gray-200 bg-white p-4 transition hover:border-blue-300"
           >
-            <p className="text-sm font-semibold text-blue-600">Voir toutes les factures →</p>
+            <p className="text-sm font-semibold text-blue-600">
+              Voir toutes les factures →
+            </p>
           </a>
         </div>
 
         {/* Actions rapides */}
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <a href="/dashboard/devis/nouveau" className="rounded-xl bg-blue-600 p-6 text-white transition hover:bg-blue-700">
+          <a
+            href="/dashboard/devis/nouveau"
+            className="rounded-xl bg-blue-600 p-6 text-white transition hover:bg-blue-700"
+          >
             <p className="mb-2 text-2xl">✏️</p>
             <p className="font-semibold">Nouveau devis</p>
-            <p className="mt-1 hidden text-sm text-blue-200 md:block">Générer en 60 secondes</p>
+            <p className="mt-1 hidden text-sm text-blue-200 md:block">
+              Générer en 60 secondes
+            </p>
           </a>
-          <a href="/dashboard/clients" className="rounded-xl border border-gray-200 bg-white p-6 transition hover:border-blue-300">
+
+          <a
+            href="/dashboard/clients"
+            className="rounded-xl border border-gray-200 bg-white p-6 transition hover:border-blue-300"
+          >
             <p className="mb-2 text-2xl">👥</p>
-            <p className="font-semibold text-gray-900">Mes clients</p>
+            <p className="font-semibold text-gray-900">
+              Mes clients
+            </p>
           </a>
-          <a href="/dashboard/catalogue" className="rounded-xl border border-gray-200 bg-white p-6 transition hover:border-blue-300">
+
+          <a
+            href="/dashboard/catalogue"
+            className="rounded-xl border border-gray-200 bg-white p-6 transition hover:border-blue-300"
+          >
             <p className="mb-2 text-2xl">📦</p>
-            <p className="font-semibold text-gray-900">Mon catalogue</p>
+            <p className="font-semibold text-gray-900">
+              Mon catalogue
+            </p>
           </a>
-          <a href="/dashboard/profil" className="rounded-xl border border-gray-200 bg-white p-6 transition hover:border-blue-300">
+
+          <a
+            href="/dashboard/profil"
+            className="rounded-xl border border-gray-200 bg-white p-6 transition hover:border-blue-300"
+          >
             <p className="mb-2 text-2xl">⚙️</p>
-            <p className="font-semibold text-gray-900">Mon profil</p>
+            <p className="font-semibold text-gray-900">
+              Mon profil
+            </p>
           </a>
         </div>
 
         {/* Derniers devis */}
         <div className="mb-4 rounded-xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-            <h2 className="font-semibold text-gray-900">Derniers devis</h2>
-            <a href="/dashboard/devis" className="text-sm text-blue-600 hover:underline">Voir tous →</a>
+            <h2 className="font-semibold text-gray-900">
+              Derniers devis
+            </h2>
+
+            <a
+              href="/dashboard/devis"
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Voir tous →
+            </a>
           </div>
+
           <div className="p-4">
             {derniersDevis.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-sm text-gray-400">Aucun devis pour le moment</p>
-                <a href="/dashboard/devis/nouveau" className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700">
+                <p className="text-sm text-gray-400">
+                  Aucun devis pour le moment
+                </p>
+
+                <a
+                  href="/dashboard/devis/nouveau"
+                  className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700"
+                >
                   Créer mon premier devis
                 </a>
               </div>
@@ -369,16 +620,31 @@ export default function Dashboard() {
                   <button
                     type="button"
                     key={d.id}
-                    onClick={() => router.push(`/dashboard/devis/${d.id}`)}
+                    onClick={() =>
+                      router.push(`/dashboard/devis/${d.id}`)
+                    }
                     className="flex w-full items-center justify-between rounded-xl border border-gray-100 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-gray-900">{d.numero}</p>
-                      <p className="truncate text-xs text-gray-500">{d.client_nom} · {formaterDate(d.created_at)}</p>
+                      <p className="truncate text-sm font-semibold text-gray-900">
+                        {d.numero}
+                      </p>
+
+                      <p className="truncate text-xs text-gray-500">
+                        {d.client_nom} · {formaterDate(d.created_at)}
+                      </p>
                     </div>
+
                     <div className="ml-4 flex flex-shrink-0 items-center gap-2">
-                      <p className="hidden text-sm font-semibold text-gray-900 sm:block">{formaterMontant(d.montant_ttc)}</p>
-                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${getStatutStyle(d.statut)}`}>
+                      <p className="hidden text-sm font-semibold text-gray-900 sm:block">
+                        {formaterMontant(d.montant_ttc)}
+                      </p>
+
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs font-medium ${getStatutStyle(
+                          d.statut
+                        )}`}
+                      >
                         {getDevisStatutLabel(d.statut)}
                       </span>
                     </div>
@@ -392,14 +658,28 @@ export default function Dashboard() {
         {/* Dernières factures */}
         <div className="rounded-xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-            <h2 className="font-semibold text-gray-900">Dernières factures</h2>
-            <a href="/dashboard/factures" className="text-sm text-blue-600 hover:underline">Voir toutes →</a>
+            <h2 className="font-semibold text-gray-900">
+              Dernières factures
+            </h2>
+
+            <a
+              href="/dashboard/factures"
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Voir toutes →
+            </a>
           </div>
+
           <div className="p-4">
             {dernieresFactures.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-sm text-gray-400">Aucune facture pour le moment</p>
-                <p className="mt-1 text-xs text-gray-400">Transformez un devis accepté en facture.</p>
+                <p className="text-sm text-gray-400">
+                  Aucune facture pour le moment
+                </p>
+
+                <p className="mt-1 text-xs text-gray-400">
+                  Transformez un devis accepté en facture.
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -407,19 +687,36 @@ export default function Dashboard() {
                   <button
                     type="button"
                     key={f.id}
-                    onClick={() => router.push(`/dashboard/factures/${f.id}`)}
+                    onClick={() =>
+                      router.push(`/dashboard/factures/${f.id}`)
+                    }
                     className="flex w-full items-center justify-between rounded-xl border border-gray-100 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-gray-900">{f.numero}</p>
+                      <p className="truncate text-sm font-semibold text-gray-900">
+                        {f.numero}
+                      </p>
+
                       <p className="truncate text-xs text-gray-500">
                         {f.client_nom} · {formaterDate(f.created_at)}
-                        {f.date_echeance ? ` · Échéance : ${formaterDate(f.date_echeance)}` : ''}
+                        {f.date_echeance
+                          ? ` · Échéance : ${formaterDate(
+                              f.date_echeance
+                            )}`
+                          : ''}
                       </p>
                     </div>
+
                     <div className="ml-4 flex flex-shrink-0 items-center gap-2">
-                      <p className="hidden text-sm font-semibold text-gray-900 sm:block">{formaterMontant(f.montant_ttc)}</p>
-                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${getFactureStatutStyle(f.statut)}`}>
+                      <p className="hidden text-sm font-semibold text-gray-900 sm:block">
+                        {formaterMontant(f.montant_ttc)}
+                      </p>
+
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs font-medium ${getFactureStatutStyle(
+                          f.statut
+                        )}`}
+                      >
                         {getFactureStatutLabel(f.statut)}
                       </span>
                     </div>
@@ -429,7 +726,6 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-
       </div>
 
       <NavBar active="dashboard" />
