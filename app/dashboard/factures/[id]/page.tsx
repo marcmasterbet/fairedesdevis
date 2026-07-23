@@ -67,7 +67,7 @@ export default function FacturePage({ params }: { params: Promise<{ id: string }
         prestataireNom: prestaNom,
         numero: facture.numero,
         montantTTC: Number(facture.montant_ttc).toFixed(2),
-        lienFacture: 'https://fairedesdevis.fr/dashboard/factures/' + id,
+        lienFacture: 'https://fairedesdevis.fr/factures/' + id,
       })
     })
 
