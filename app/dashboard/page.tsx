@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [joursRestants, setJoursRestants] = useState<number | null>(null)
   const [dateFinEssai, setDateFinEssai] = useState<string>('')
+  const [portalLoading, setPortalLoading] = useState(false)
 
   useEffect(() => {
     let composantActif = true
@@ -124,6 +125,32 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Erreur lors de la déconnexion :', error)
     }
+  }
+
+  const ouvrirPortailStripe = async () => {
+    setPortalLoading(true)
+    const customerId = user?.user_metadata?.stripe_customer_id
+
+    if (!customerId) {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id, email: user?.email })
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      setPortalLoading(false)
+      return
+    }
+
+    const res = await fetch('/api/stripe/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerId })
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+    setPortalLoading(false)
   }
 
   if (loading) {
@@ -224,7 +251,7 @@ export default function Dashboard() {
           {metier && <p className="mt-1 text-sm text-gray-500">{metier}</p>}
         </div>
 
-        {/* Bannière essai avec date exacte */}
+        {/* Bannière essai */}
         {joursRestants !== null && (
           <div className={`mb-6 rounded-xl px-6 py-4 border ${joursRestants <= 2 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -236,12 +263,13 @@ export default function Dashboard() {
                   ⚠️ Votre essai se termine le <strong>{dateFinEssai}</strong>. Résiliez avant cette date pour ne pas être débité.
                 </p>
               </div>
-              <a
-                href="/abonnement"
-                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition ${joursRestants <= 2 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
+              <button
+                onClick={ouvrirPortailStripe}
+                disabled={portalLoading}
+                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition disabled:opacity-50 ${joursRestants <= 2 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
               >
-                S'abonner →
-              </a>
+                {portalLoading ? 'Chargement...' : 'Gérer mon abonnement →'}
+              </button>
             </div>
           </div>
         )}
