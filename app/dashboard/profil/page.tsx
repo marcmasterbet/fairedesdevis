@@ -16,6 +16,7 @@ export default function Profil() {
   const [savingSignature, setSavingSignature] = useState(false)
   const [logoUrl, setLogoUrl] = useState('')
   const [signatureUrl, setSignatureUrl] = useState('')
+  const [portalLoading, setPortalLoading] = useState(false)
   const sigCanvas = useRef<SignatureCanvas>(null)
   const [form, setForm] = useState({
     nom: '', metier: '', siret: '', telephone: '', adresse: '',
@@ -99,6 +100,20 @@ export default function Profil() {
     supabase.auth.updateUser({ data: { ...form, logo_url: logoUrl, signature_url: '' } })
   }
 
+  const handlePortail = async () => {
+    if (!user?.user_metadata?.stripe_customer_id) return
+    setPortalLoading(true)
+    const res = await fetch('/api/stripe/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerId: user.user_metadata.stripe_customer_id })
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+    else alert('Erreur portail Stripe')
+    setPortalLoading(false)
+  }
+
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }))
 
   if (loading) return (
@@ -106,6 +121,9 @@ export default function Profil() {
       <p className="text-gray-400">Chargement...</p>
     </main>
   )
+
+  const estVIP = user?.user_metadata?.actif_manuellement === true
+  const estActif = user?.user_metadata?.abonnement_actif === true || user?.user_metadata?.stripe_statut === 'trialing' || user?.user_metadata?.stripe_statut === 'actif'
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -120,6 +138,71 @@ export default function Profil() {
             Profil sauvegarde avec succes !
           </div>
         )}
+
+        {/* Abonnement */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+          <h2 className="font-semibold text-gray-900 mb-4">Mon abonnement</h2>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Statut</span>
+              {estVIP ? (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">⭐ Accès VIP offert</span>
+              ) : estActif ? (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">✅ Abonnement actif</span>
+              ) : (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">⏳ Essai gratuit</span>
+              )}
+            </div>
+
+            {estVIP && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3">
+                <p className="text-purple-700 text-sm font-medium">⭐ Accès VIP offert par FaireDesDevis</p>
+                <p className="text-purple-500 text-xs mt-1">Accès illimité sans abonnement</p>
+              </div>
+            )}
+
+            {!estVIP && user?.user_metadata?.trial_end && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Fin de l essai</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {new Date(user.user_metadata.trial_end).toLocaleDateString('fr-FR')}
+                </span>
+              </div>
+            )}
+
+            {!estVIP && user?.user_metadata?.dernier_paiement && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Dernier paiement</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {new Date(user.user_metadata.dernier_paiement).toLocaleDateString('fr-FR')}
+                </span>
+              </div>
+            )}
+
+            {!estVIP && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Plan</span>
+                <span className="text-sm font-semibold text-gray-900">Pro — 19,90€/mois</span>
+              </div>
+            )}
+
+            {!estVIP && (
+              user?.user_metadata?.stripe_customer_id ? (
+                <button
+                  onClick={handlePortail}
+                  disabled={portalLoading}
+                  className="w-full bg-gray-100 text-gray-700 py-3 rounded-lg text-sm font-semibold hover:bg-gray-200 transition mt-2 disabled:opacity-50"
+                >
+                  {portalLoading ? 'Chargement...' : 'Gérer mon abonnement →'}
+                </button>
+              ) : (
+                <a href="/abonnement" className="block w-full text-center bg-blue-600 text-white py-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition mt-2">
+                  Souscrire — 1 mois gratuit →
+                </a>
+              )
+            )}
+          </div>
+        </div>
 
         {/* Logo */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
