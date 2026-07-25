@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [joursRestants, setJoursRestants] = useState<number | null>(null)
   const [dateFinEssai, setDateFinEssai] = useState<string>('')
   const [portalLoading, setPortalLoading] = useState(false)
+  const [estVIP, setEstVIP] = useState(false)
 
   useEffect(() => {
     let composantActif = true
@@ -61,7 +62,7 @@ export default function Dashboard() {
         }
 
         const metadata = utilisateurConnecte.user_metadata ?? {}
-        const estVIP = metadata.actif_manuellement === true
+        setEstVIP(metadata.actif_manuellement === true)
         const statutStripe = String(
           metadata.stripe_statut ?? ''
         ).toLowerCase()
@@ -387,7 +388,7 @@ export default function Dashboard() {
         </div>
 
         {/* Bannière essai */}
-        {joursRestants !== null && (
+        {joursRestants !== null && !estVIP && (
           <div
             className={`mb-6 rounded-xl border px-6 py-4 ${
               joursRestants <= 2
