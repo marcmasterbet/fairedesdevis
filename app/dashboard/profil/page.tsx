@@ -27,7 +27,8 @@ export default function Profil() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data } = await supabase.auth.refreshSession()
+      const user = data?.user
       if (!user) { router.push('/login'); return }
       setUser(user)
       setForm(f => ({
