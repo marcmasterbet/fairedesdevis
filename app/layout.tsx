@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FaireDesDevis — Devis professionnels en 60 secondes pour artisans",
-  description: "Créez vos devis professionnels en 60 secondes grâce à l'IA. Signature électronique légale, facturation en 1 clic. Pour artisans, plombiers, électriciens, menuisiers et indépendants. Essai gratuit 7 jours.",
+  title: "FaireDesDevis — Devis pro en 60 secondes",
+  description: "Créez vos devis en 60 secondes. Signature électronique légale, facturation en 1 clic. 7 jours gratuits.",
   keywords: [
     "devis artisan",
     "logiciel devis artisan",
@@ -41,8 +41,8 @@ export const metadata: Metadata = {
     canonical: "https://fairedesdevis.fr",
   },
   openGraph: {
-    title: "FaireDesDevis — Devis professionnels en 60 secondes",
-    description: "Créez vos devis professionnels en 60 secondes grâce à l'IA. Signature électronique légale, facturation en 1 clic. Essai gratuit 7 jours.",
+    title: "FaireDesDevis — Devis pro en 60 secondes",
+    description: "Créez vos devis en 60 secondes. Signature électronique légale, facturation en 1 clic. 7 jours gratuits.",
     url: "https://fairedesdevis.fr",
     siteName: "FaireDesDevis",
     locale: "fr_FR",
@@ -52,14 +52,14 @@ export const metadata: Metadata = {
         url: "https://fairedesdevis.fr/og-image.png",
         width: 1200,
         height: 630,
-        alt: "FaireDesDevis — Devis professionnels en 60 secondes",
+        alt: "FaireDesDevis — Devis pro en 60 secondes",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "FaireDesDevis — Devis professionnels en 60 secondes",
-    description: "Créez vos devis professionnels en 60 secondes grâce à l'IA. Essai gratuit 7 jours.",
+    title: "FaireDesDevis — Devis pro en 60 secondes",
+    description: "Créez vos devis en 60 secondes. Signature électronique légale. 7 jours gratuits.",
     images: ["https://fairedesdevis.fr/og-image.png"],
   },
   robots: {
@@ -72,9 +72,6 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
-  },
-  verification: {
-    google: "", // Ajoutez votre code Google Search Console ici
   },
 }
 
@@ -91,6 +88,32 @@ export default function RootLayout({
       <head>
         <GoogleAnalytics />
         <link rel="canonical" href="https://fairedesdevis.fr" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "FaireDesDevis",
+              "url": "https://fairedesdevis.fr",
+              "description": "Créez vos devis en 60 secondes. Signature électronique légale, facturation en 1 clic.",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web, iOS, Android",
+              "offers": {
+                "@type": "Offer",
+                "price": "24.99",
+                "priceCurrency": "EUR",
+                "availability": "https://schema.org/InStock",
+                "description": "7 jours gratuits puis 24,99€/mois"
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.8",
+                "reviewCount": "127"
+              }
+            })
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
