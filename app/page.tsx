@@ -53,12 +53,12 @@ export default function Home() {
 
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-  <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2016_39_11.png" alt="FaireDesDevis" style={{ height: '36px', width: 'auto' }} />
-</div>
+          <a href="/" className="flex items-center gap-2">
+  <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2016_39_11.png" alt="FaireDesDevis" style={{ height: '40px', width: 'auto' }} />
+  <span className="text-xl font-bold text-blue-600">FaireDesDevis</span>
+</a>
           <nav className="hidden md:flex items-center gap-8">
             <a href="#comment-ca-marche" className="text-gray-600 hover:text-blue-600 text-sm">Comment ça marche</a>
-            <a href="#fonctionnalites" className="text-gray-600 hover:text-blue-600 text-sm">Fonctionnalités</a>
             <a href="#tarif" className="text-gray-600 hover:text-blue-600 text-sm">Tarif</a>
             <a href="#faq" className="text-gray-600 hover:text-blue-600 text-sm">FAQ</a>
             <a href="/blog" className="text-gray-600 hover:text-blue-600 text-sm">Blog</a>
@@ -165,7 +165,6 @@ export default function Home() {
                   {e.num}
                 </div>
                 <p className="text-2xl mb-3">{e.icon}</p>
-                <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2016_39_11.png" alt="FaireDesDevis" style={{ height: '32px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
                 <p className="text-gray-500 text-sm leading-relaxed">{e.desc}</p>
               </div>
             ))}
@@ -284,7 +283,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
-  <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2010_29_20.png" alt="FaireDesDevis" style={{ height: '28px', width: 'auto' }} />
+  <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2016_39_11.png" alt="FaireDesDevis" style={{ height: '28px', width: 'auto' }} />
   <h3 className="text-white font-bold text-lg">FaireDesDevis</h3>
 </div>
               <p className="text-gray-400 text-sm">Devis professionnels pour artisans</p>
