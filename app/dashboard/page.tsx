@@ -85,7 +85,8 @@ export default function Dashboard() {
         const essaiLocalValide =
           joursDepuisInscription >= 0 && joursDepuisInscription <= 7
 
-        if (!estVIP && !abonnementActif && !essaiLocalValide) {
+        const isVIP = metadata.actif_manuellement === true
+if (!isVIP && !abonnementActif && !essaiLocalValide) {
           router.replace('/abonnement')
           return
         }
