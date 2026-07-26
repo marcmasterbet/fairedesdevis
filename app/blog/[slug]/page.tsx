@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { use } from 'react'
 
 const articles: Record<string, {
   titre: string
@@ -216,8 +217,9 @@ const articles: Record<string, {
   },
 }
 
-export default function Article({ params }: { params: { slug: string } }) {
-  const article = articles[params.slug]
+export default function Article({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params)
+  const article = articles[slug]
   if (!article) notFound()
 
   return (
