@@ -10,7 +10,15 @@ export default function Home() {
   useEffect(() => {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) router.push('/dashboard')
+      if (user) {
+  const metadata = user.user_metadata ?? {}
+  const isVIP = metadata.actif_manuellement === true
+  const statutStripe = String(metadata.stripe_statut ?? '').toLowerCase()
+  const abonnementActif = metadata.abonnement_actif === true || statutStripe === 'active' || statutStripe === 'actif'
+  const joursDepuis = Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24))
+  const essaiValide = joursDepuis <= 7
+  if (isVIP || abonnementActif || essaiValide) router.push('/dashboard')
+}
     }
     check()
   }, [router])
