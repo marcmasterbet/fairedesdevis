@@ -43,6 +43,34 @@ const articles = [
     titre: 'Comment transformer un devis accepté en facture en 1 clic',
     extrait: 'Une fois le devis signé par votre client, la facturation doit être rapide et sans erreur. Voici comment automatiser ce processus.',
   },
+  {
+    slug: 'devis-batiment-travaux',
+    categorie: 'GUIDE PRATIQUE',
+    date: '8 juillet 2026',
+    titre: 'Comment faire un devis pour travaux en bâtiment en 2026',
+    extrait: 'Chiffrage, TVA, mentions obligatoires — tout ce qu\'il faut savoir pour établir un devis bâtiment légal et professionnel.',
+  },
+  {
+    slug: 'relance-devis-non-signe',
+    categorie: 'CONSEILS',
+    date: '5 juillet 2026',
+    titre: 'Comment relancer un client après un devis non signé',
+    extrait: '60% des devis non relancés ne sont jamais signés. Voici comment relancer efficacement sans être intrusif.',
+  },
+  {
+    slug: 'auto-entrepreneur-devis-facture',
+    categorie: 'RÉGLEMENTATION',
+    date: '2 juillet 2026',
+    titre: 'Auto-entrepreneur : comment faire ses devis et factures légalement',
+    extrait: 'SIRET, TVA non applicable, mentions obligatoires — tout ce que l\'auto-entrepreneur doit savoir sur ses devis.',
+  },
+  {
+    slug: 'catalogue-produits-artisan',
+    categorie: 'PRODUCTIVITÉ',
+    date: '28 juin 2026',
+    titre: 'Comment créer un catalogue produits pour artisan et gagner 2h par semaine',
+    extrait: 'Un catalogue bien organisé vous permet de créer un devis en 60 secondes au lieu de 45 minutes. Voici comment.',
+  },
 ]
 
 export default function Blog() {
