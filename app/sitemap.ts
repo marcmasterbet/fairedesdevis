@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next'
 
 const villes = ['strasbourg', 'paris', 'lyon', 'marseille', 'bordeaux', 'toulouse', 'nantes', 'lille', 'nice', 'montpellier', 'rennes', 'reims', 'saint-etienne', 'toulon', 'grenoble', 'dijon', 'angers', 'nimes', 'villeurbanne', 'clermont-ferrand', 'aix-en-provence', 'brest', 'tours', 'amiens', 'limoges', 'annecy', 'perpignan', 'boulogne-billancourt', 'metz', 'besancon', 'orleans', 'rouen', 'mulhouse', 'caen', 'nancy', 'saint-denis', 'argenteuil', 'montreuil', 'roubaix', 'tourcoing', 'avignon', 'dunkerque', 'poitiers', 'versailles', 'colombes', 'pau', 'vitry-sur-seine', 'la-rochelle', 'cannes', 'colmar']
 const metiers = ['plombier', 'electricien', 'menuisier', 'carreleur', 'peintre', 'macon', 'chauffagiste', 'serrurier', 'pisciniste', 'conciergerie']
+const departements = ['alsace', 'ile-de-france', 'auvergne-rhone-alpes', 'paca', 'nouvelle-aquitaine', 'occitanie', 'bretagne', 'pays-de-la-loire', 'hauts-de-france', 'normandie', 'grand-est', 'bourgogne-franche-comte', 'centre-val-de-loire']
 
 const articlesStatiques = [
   'comment-faire-un-devis-professionnel',
@@ -14,6 +15,14 @@ const articlesStatiques = [
   'relance-devis-non-signe',
   'auto-entrepreneur-devis-facture',
   'catalogue-produits-artisan',
+]
+
+const landingPages = [
+  'comment-faire-un-devis',
+  'logiciel-devis-artisan',
+  'devis-en-ligne-gratuit',
+  'signature-electronique-devis',
+  'facturation-artisan',
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -50,5 +59,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }))
 
-  return [...base, ...articlesStatiquesUrls, ...articlesVillesUrls, ...fichesMeatiersUrls]
+  const departementsUrls: MetadataRoute.Sitemap = departements.map(dep => ({
+    url: `https://fairedesdevis.fr/departements/${dep}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly',
+    priority: 0.8,
+  }))
+
+  const landingPagesUrls: MetadataRoute.Sitemap = landingPages.map(slug => ({
+    url: `https://fairedesdevis.fr/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly',
+    priority: 0.9,
+  }))
+
+  return [...base, ...articlesStatiquesUrls, ...articlesVillesUrls, ...fichesMeatiersUrls, ...departementsUrls, ...landingPagesUrls]
 }
