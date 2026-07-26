@@ -195,6 +195,65 @@ export default function Home() {
           </div>
         </div>
       </section>
+      
+{/* TÉMOIGNAGES */}
+<section className="py-20 px-6 bg-white">
+  <div className="max-w-5xl mx-auto">
+    <div className="text-center mb-16">
+      <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-3">Ils nous font confiance</p>
+      <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Ce que disent nos artisans</h2>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {[
+        {
+          nom: 'Karim B.',
+          metier: 'Plombier · Lyon',
+          note: '⭐⭐⭐⭐⭐',
+          texte: 'Avant je passais 1h à faire mes devis sur Word. Maintenant c\'est 2 minutes chrono. Mes clients signent depuis leur téléphone le soir même. J\'ai signé 3 chantiers de plus ce mois-ci.'
+        },
+        {
+          nom: 'Sophie M.',
+          metier: 'Électricienne · Strasbourg',
+          note: '⭐⭐⭐⭐⭐',
+          texte: 'La signature électronique c\'est ce qui m\'a convaincue. Plus besoin d\'imprimer, scanner, renvoyer. Le client signe en 30 secondes et je reçois une notification. Simple et professionnel.'
+        },
+        {
+          nom: 'Thierry D.',
+          metier: 'Menuisier · Bordeaux',
+          note: '⭐⭐⭐⭐⭐',
+          texte: 'J\'ai importé mon catalogue de 200 produits en 5 minutes. Maintenant je fais mes devis sur le chantier depuis mon téléphone. Les clients sont impressionnés par le rendu professionnel.'
+        },
+        {
+          nom: 'Nadia R.',
+          metier: 'Peintre · Paris',
+          note: '⭐⭐⭐⭐⭐',
+          texte: 'Le passage devis → facture en 1 clic m\'a sauvé la vie. Je ne perdais pas de temps à refaire la même chose deux fois. Et le suivi des paiements dans le dashboard c\'est top.'
+        },
+        {
+          nom: 'Marc L.',
+          metier: 'Maçon · Marseille',
+          note: '⭐⭐⭐⭐⭐',
+          texte: 'J\'étais sceptique au début mais l\'essai gratuit m\'a convaincu. En 7 jours j\'avais déjà envoyé 12 devis. Mes clients me disent que c\'est très pro. Je ne reviendrai pas en arrière.'
+        },
+        {
+          nom: 'Julien P.',
+          metier: 'Chauffagiste · Nantes',
+          note: '⭐⭐⭐⭐⭐',
+          texte: 'Le prix est honnête pour ce que ça apporte. J\'économise au moins 5h par semaine sur l\'administratif. Et le support répond vite quand j\'ai une question. Je recommande.'
+        },
+      ].map((t, i) => (
+        <div key={i} className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+          <p className="text-sm mb-1">{t.note}</p>
+          <p className="text-gray-700 text-sm leading-relaxed mb-4 italic">"{t.texte}"</p>
+          <div>
+            <p className="font-bold text-gray-900 text-sm">{t.nom}</p>
+            <p className="text-gray-400 text-xs">{t.metier}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* Tarif */}
       <section id="tarif" className="py-20 px-6 bg-gray-50">
