@@ -3,8 +3,13 @@ import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
+const PRICE_MENSUEL = process.env.STRIPE_PRICE_ID!
+const PRICE_ANNUEL = 'price_1TxVsWRjh6LZLGsCy8ISFGLj'
+
 export async function POST(req: NextRequest) {
-  const { userId, email } = await req.json()
+  const { userId, email, plan } = await req.json()
+
+  const priceId = plan === 'annuel' ? PRICE_ANNUEL : PRICE_MENSUEL
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -13,7 +18,7 @@ export async function POST(req: NextRequest) {
       customer_email: email,
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID!,
+          price: priceId,
           quantity: 1,
         }
       ],
