@@ -54,6 +54,7 @@ export default function Home() {
             <a href="#fonctionnalites" className="text-gray-600 hover:text-blue-600 text-sm">Fonctionnalités</a>
             <a href="#tarif" className="text-gray-600 hover:text-blue-600 text-sm">Tarif</a>
             <a href="#faq" className="text-gray-600 hover:text-blue-600 text-sm">FAQ</a>
+            <a href="/blog" className="text-gray-600 hover:text-blue-600 text-sm">Blog</a>
           </nav>
           <div className="flex items-center gap-3">
             <a href="/login" className="text-gray-600 hover:text-blue-600 text-sm">Connexion</a>
