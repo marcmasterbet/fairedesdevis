@@ -4,7 +4,7 @@ import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const PRICE_MENSUEL = process.env.STRIPE_PRICE_ID!
-const PRICE_ANNUEL = 'price_1TxVsWRjh6LZLGsCy8ISFGLj'
+const PRICE_ANNUEL = process.env.STRIPE_PRICE_ID_ANNUEL!
 
 export async function POST(req: NextRequest) {
   const { userId, email, plan } = await req.json()
