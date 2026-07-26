@@ -54,8 +54,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-  <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2010_29_20.png" alt="FaireDesDevis" style={{ height: '36px', width: 'auto' }} />
-  <span className="text-xl font-bold text-blue-600">FaireDesDevis</span>
+  <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2016_39_11.png" alt="FaireDesDevis" style={{ height: '36px', width: 'auto' }} />
 </div>
           <nav className="hidden md:flex items-center gap-8">
             <a href="#comment-ca-marche" className="text-gray-600 hover:text-blue-600 text-sm">Comment ça marche</a>
@@ -166,7 +165,7 @@ export default function Home() {
                   {e.num}
                 </div>
                 <p className="text-2xl mb-3">{e.icon}</p>
-                <h3 className="font-bold text-gray-900 mb-2">{e.titre}</h3>
+                <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2016_39_11.png" alt="FaireDesDevis" style={{ height: '32px', width: 'auto', filter: 'brightness(0) invert(1)' }} />
                 <p className="text-gray-500 text-sm leading-relaxed">{e.desc}</p>
               </div>
             ))}
