@@ -45,7 +45,10 @@ export default function Home() {
 
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold text-blue-600">FaireDesDevis</h1>
+          <div className="flex items-center gap-2">
+  <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2010_29_20.png" alt="FaireDesDevis" style={{ height: '36px', width: 'auto' }} />
+  <span className="text-xl font-bold text-blue-600">FaireDesDevis</span>
+</div>
           <nav className="hidden md:flex items-center gap-8">
             <a href="#comment-ca-marche" className="text-gray-600 hover:text-blue-600 text-sm">Comment ça marche</a>
             <a href="#fonctionnalites" className="text-gray-600 hover:text-blue-600 text-sm">Fonctionnalités</a>
@@ -272,7 +275,10 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-              <h3 className="text-white font-bold text-lg mb-1">FaireDesDevis</h3>
+              <div className="flex items-center gap-2 mb-1">
+  <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2010_29_20.png" alt="FaireDesDevis" style={{ height: '28px', width: 'auto' }} />
+  <h3 className="text-white font-bold text-lg">FaireDesDevis</h3>
+</div>
               <p className="text-gray-400 text-sm">Devis professionnels pour artisans</p>
             </div>
             <div className="flex gap-6 text-sm text-gray-400 flex-wrap justify-center">
