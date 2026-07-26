@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
 
-const villes = ['strasbourg', 'paris', 'lyon', 'marseille', 'bordeaux', 'toulouse', 'nantes', 'lille', 'nice', 'montpellier']
+const villes = ['strasbourg', 'paris', 'lyon', 'marseille', 'bordeaux', 'toulouse', 'nantes', 'lille', 'nice', 'montpellier', 'rennes', 'reims', 'saint-etienne', 'toulon', 'grenoble', 'dijon', 'angers', 'nimes', 'villeurbanne', 'clermont-ferrand', 'aix-en-provence', 'brest', 'tours', 'amiens', 'limoges', 'annecy', 'perpignan', 'boulogne-billancourt', 'metz', 'besancon', 'orleans', 'rouen', 'mulhouse', 'caen', 'nancy', 'saint-denis', 'argenteuil', 'montreuil', 'roubaix', 'tourcoing', 'avignon', 'dunkerque', 'poitiers', 'versailles', 'colombes', 'pau', 'vitry-sur-seine', 'la-rochelle', 'cannes', 'colmar']
 const metiers = ['plombier', 'electricien', 'menuisier', 'carreleur', 'peintre', 'macon', 'chauffagiste', 'serrurier', 'pisciniste', 'conciergerie']
 
 const articlesStatiques = [
