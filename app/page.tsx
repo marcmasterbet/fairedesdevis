@@ -51,24 +51,81 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white">
 
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <a href="/" className="flex items-center gap-2">
-  <img src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2016_39_11.png" alt="FaireDesDevis" style={{ height: '40px', width: 'auto' }} />
-  <span className="text-xl font-bold text-blue-600">FaireDesDevis</span>
-</a>
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#comment-ca-marche" className="text-gray-600 hover:text-blue-600 text-sm">Comment ça marche</a>
-            <a href="#tarif" className="text-gray-600 hover:text-blue-600 text-sm">Tarif</a>
-            <a href="#faq" className="text-gray-600 hover:text-blue-600 text-sm">FAQ</a>
-            <a href="/blog" className="text-gray-600 hover:text-blue-600 text-sm">Blog</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            <a href="/login" className="text-gray-600 hover:text-blue-600 text-sm">Connexion</a>
-            <a href="/register" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">Essai gratuit</a>
-          </div>
-        </div>
-      </header>
+      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white">
+  <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
+
+    {/* Logo */}
+    <a href="/" className="flex items-center gap-2 flex-shrink-0">
+      <img
+        src="https://xkwdwragibeingoaizwq.supabase.co/storage/v1/object/public/logos/ChatGPT%20Image%2026%20juil.%202026,%2016_39_11.png"
+        alt="FaireDesDevis"
+        className="h-10 w-auto"
+      />
+
+      {/* Masqué sur mobile */}
+      <span className="hidden md:block text-2xl font-bold text-blue-600">
+        FaireDesDevis
+      </span>
+    </a>
+
+    {/* Navigation desktop */}
+    <nav className="hidden lg:flex items-center gap-8">
+      <a
+        href="#comment-ca-marche"
+        className="text-sm text-gray-600 hover:text-blue-600"
+      >
+        Comment ça marche
+      </a>
+
+      <a
+        href="#tarif"
+        className="text-sm text-gray-600 hover:text-blue-600"
+      >
+        Tarif
+      </a>
+
+      <a
+        href="#faq"
+        className="text-sm text-gray-600 hover:text-blue-600"
+      >
+        FAQ
+      </a>
+
+      <a
+        href="/blog"
+        className="text-sm text-gray-600 hover:text-blue-600"
+      >
+        Blog
+      </a>
+    </nav>
+
+    {/* Boutons */}
+    <div className="flex items-center gap-2">
+
+      <a
+        href="/login"
+        className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+      >
+        Connexion
+      </a>
+
+      <a
+        href="/register"
+        className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+      >
+        <span className="hidden sm:inline">
+          Essai gratuit
+        </span>
+
+        <span className="sm:hidden">
+          Essai
+        </span>
+      </a>
+
+    </div>
+
+  </div>
+</header>
 
       {/* Hero */}
       <section className="py-20 px-6 text-center bg-gradient-to-b from-blue-50 to-white">
